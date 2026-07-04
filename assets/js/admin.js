@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=2";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=3";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -6,8 +6,8 @@ import {
   updateMember,
   getTimeControls,
   setTimeControl,
-} from "./api.js?v=2";
-import { initAppSwitcher } from "./app-switcher.js?v=2";
+} from "./api.js?v=3";
+import { initAppSwitcher } from "./app-switcher.js?v=3";
 
 initAppSwitcher();
 
@@ -41,12 +41,6 @@ passwordSubmitBtn.addEventListener("click", tryPassword);
 passwordInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") tryPassword();
 });
-
-if (sessionStorage.getItem(AUTH_KEY) === "1") {
-  unlock();
-} else {
-  passwordInput.focus();
-}
 
 /* ===================== 초기화(비밀번호 통과 후) ===================== */
 let initialized = false;
@@ -315,4 +309,17 @@ async function initControlTab() {
     row.append(label, toggle);
     timeControlListEl.appendChild(row);
   }
+}
+
+/* ===================== 세션 유지 확인 =====================
+ * 파일 맨 아래에서 해야 한다 — unlock()이 이 시점 이전에 선언된 모든 const
+ * (memberCountEl, timeControlListEl 등)를 곧바로 참조하는데, 이 체크가 파일
+ * 위쪽에 있으면 아직 초기화되지 않은 const에 접근하다 "Cannot access before
+ * initialization"으로 스크립트 전체가 죽는다 — 새로고침/재방문 시 세션이 남아있어
+ * unlock()이 즉시 호출되면서 이 문제가 그대로 드러났었다.
+ */
+if (sessionStorage.getItem(AUTH_KEY) === "1") {
+  unlock();
+} else {
+  passwordInput.focus();
 }
