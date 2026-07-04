@@ -40,6 +40,29 @@ export async function getAllMembers() {
   }
 }
 
+/**
+ * 신규 등록 전용 자동 회원ID. 실제 교적 ID(31~299757 등)와 절대 겹치지 않도록
+ * "999999" 접두어 뒤에 순번을 붙인다 (예: 9999991, 9999992, ..., 999999100).
+ * ID 컬럼이 숫자(bigint)라서 문자를 섞을 수 없어 이 형태로 정했다.
+ */
+export async function getNextGeneratedId() {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/Member?select=ID&ID=gte.9999990&order=ID.desc&limit=1`,
+      { headers: headers() }
+    );
+    const data = await res.json();
+    if (Array.isArray(data) && data.length) {
+      const suffix = parseInt(String(data[0].ID).slice(6), 10);
+      const next = (Number.isNaN(suffix) ? 0 : suffix) + 1;
+      return "999999" + next;
+    }
+    return "9999991";
+  } catch (e) {
+    return "9999991";
+  }
+}
+
 /** ID가 이미 있으면 회원ID 중복 — 등록 전 존재 여부를 먼저 확인한다. */
 export async function memberExists(id) {
   try {

@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>관리자 — AttendMate_Admin</title>
 <meta name="description" content="AttendMate 회원/네임카드/타임 제어 관리자 페이지">
-<link rel="stylesheet" href="assets/css/tokens.css?v=1">
-<link rel="stylesheet" href="assets/css/base.css?v=1">
-<link rel="stylesheet" href="assets/css/components.css?v=1">
-<link rel="stylesheet" href="assets/css/admin.css?v=1">
+<link rel="stylesheet" href="assets/css/tokens.css?v=2">
+<link rel="stylesheet" href="assets/css/base.css?v=2">
+<link rel="stylesheet" href="assets/css/components.css?v=2">
+<link rel="stylesheet" href="assets/css/admin.css?v=2">
 </head>
 <body>
 
@@ -74,7 +74,7 @@
           <tbody id="memberTableBody"></tbody>
         </table>
       </div>
-      <div id="memberEmpty" class="stats-empty text-caption" style="display:none;">이름, 회원ID, 학년반으로 검색해주세요.</div>
+      <div id="memberEmpty" class="stats-empty text-caption" style="display:none;">검색 결과가 없습니다.</div>
     </section>
 
     <!-- ===== NameCard 탭 (준비 중) ===== -->
@@ -98,10 +98,10 @@
 <div id="memberModal" class="modal-overlay" style="display:none">
   <div class="modal-panel">
     <h3 class="text-body-strong on-light" id="memberModalTitle">새 회원 등록</h3>
-    <input id="memberIdInput" class="search-input" style="width:100%;" type="text" placeholder="회원ID (숫자)" inputmode="numeric">
+    <input id="memberIdInput" class="search-input" style="width:100%;" type="text" placeholder="회원ID" disabled>
     <input id="memberNameInput" class="search-input" style="width:100%;" type="text" placeholder="이름">
-    <input id="memberDivisionInput" class="search-input" style="width:100%;" type="text" placeholder="학년반 (예: 1-1반, 교사)">
-    <input id="memberPhoneInput" class="search-input" style="width:100%;" type="text" placeholder="전화번호">
+    <select id="memberDivisionInput" class="search-input" style="width:100%;"></select>
+    <input id="memberPhoneInput" class="search-input" style="width:100%;" type="text" placeholder="전화번호 (11자리 숫자)" inputmode="numeric" maxlength="11">
     <div id="memberModalError" class="password-gate__error text-caption" style="display:none;"></div>
     <div style="display:flex; gap:8px; justify-content:flex-end;">
       <button id="memberModalCancelBtn" class="btn-secondary-pill">취소</button>
@@ -110,6 +110,6 @@
   </div>
 </div>
 
-<script type="module" src="assets/js/admin.js?v=1"></script>
+<script type="module" src="assets/js/admin.js?v=2"></script>
 </body>
 </html>

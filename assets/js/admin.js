@@ -1,13 +1,13 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=1";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=2";
 import {
   getAllMembers,
-  memberExists,
+  getNextGeneratedId,
   createMember,
   updateMember,
   getTimeControls,
   setTimeControl,
-} from "./api.js?v=1";
-import { initAppSwitcher } from "./app-switcher.js?v=1";
+} from "./api.js?v=2";
+import { initAppSwitcher } from "./app-switcher.js?v=2";
 
 initAppSwitcher();
 
@@ -136,27 +136,41 @@ async function initMemberTab() {
   const res = await getAllMembers();
   allMembers = res.members || [];
   membersLoaded = true;
-  memberCountEl.textContent = `전체 ${allMembers.length}명 — 검색해서 좁혀보세요`;
-  renderMemberTable([]);
+  populateDivisionOptions();
+  memberCountEl.textContent = `전체 ${allMembers.length}명`;
+  renderMemberTable(allMembers); // 기본 상태는 전체 명단 — 검색은 이 목록을 좁힐 뿐
 
   memberSearchInput.addEventListener("input", () => {
     const q = memberSearchInput.value.trim().toLowerCase();
     if (!q) {
-      renderMemberTable([]);
+      memberCountEl.textContent = `전체 ${allMembers.length}명`;
+      renderMemberTable(allMembers);
       return;
     }
-    const matches = allMembers
-      .filter(
-        (m) =>
-          m.이름.toLowerCase().includes(q) ||
-          m.회원ID.toLowerCase().includes(q) ||
-          (m.학년반 || "").toLowerCase().includes(q) ||
-          (m.전화 || "").includes(q)
-      )
-      .slice(0, 200);
-    renderMemberTable(matches);
+    const matches = allMembers.filter(
+      (m) =>
+        m.이름.toLowerCase().includes(q) ||
+        m.회원ID.toLowerCase().includes(q) ||
+        (m.학년반 || "").toLowerCase().includes(q) ||
+        (m.전화 || "").includes(q)
+    );
+    memberCountEl.textContent = `${matches.length}명 검색됨`;
+    renderMemberTable(matches.slice(0, 200));
   });
 }
+
+/** 실제 명단에 있는 학년반 값들로 드롭다운을 채운다 — 오타/자유입력을 막는다. */
+function populateDivisionOptions() {
+  const divisions = [...new Set(allMembers.map((m) => m.학년반).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, "ko", { numeric: true })
+  );
+  memberDivisionInput.innerHTML = divisions.map((d) => `<option value="${d}">${d}</option>`).join("");
+}
+
+/** 전화번호는 숫자만, 최대 11자리 — "-" 등 다른 문자는 입력 자체가 안 되게 한다. */
+memberPhoneInput.addEventListener("input", () => {
+  memberPhoneInput.value = memberPhoneInput.value.replace(/\D/g, "").slice(0, 11);
+});
 
 function renderMemberTable(members) {
   memberTableBody.innerHTML = "";
@@ -181,27 +195,29 @@ function renderMemberTable(members) {
   }
 }
 
-function openMemberModal(member) {
+async function openMemberModal(member) {
   memberModalError.style.display = "none";
+  memberIdInput.disabled = true; // 교번은 신규/수정 어느 쪽도 직접 입력하지 않는다
   if (member) {
     editingMemberId = member.회원ID;
     memberModalTitle.textContent = "회원 정보 수정";
     memberIdInput.value = member.회원ID;
-    memberIdInput.disabled = true;
     memberNameInput.value = member.이름;
     memberDivisionInput.value = member.학년반 || "";
     memberPhoneInput.value = member.전화 || "";
+    memberModal.style.display = "flex";
+    memberNameInput.focus();
   } else {
     editingMemberId = null;
     memberModalTitle.textContent = "새 회원 등록";
-    memberIdInput.value = "";
-    memberIdInput.disabled = false;
+    memberIdInput.value = "발급 중...";
     memberNameInput.value = "";
     memberDivisionInput.value = "";
     memberPhoneInput.value = "";
+    memberModal.style.display = "flex";
+    memberIdInput.value = await getNextGeneratedId();
+    memberNameInput.focus();
   }
-  memberModal.style.display = "flex";
-  (editingMemberId ? memberNameInput : memberIdInput).focus();
 }
 
 function closeMemberModal() {
@@ -217,13 +233,18 @@ memberModalSaveBtn.addEventListener("click", async () => {
   const division = memberDivisionInput.value.trim();
   const phone = memberPhoneInput.value.trim();
 
-  if (!id || Number.isNaN(Number(id))) {
-    memberModalError.textContent = "회원ID는 숫자로 입력해주세요.";
+  if (!name) {
+    memberModalError.textContent = "이름을 입력해주세요.";
     memberModalError.style.display = "block";
     return;
   }
-  if (!name) {
-    memberModalError.textContent = "이름을 입력해주세요.";
+  if (!division) {
+    memberModalError.textContent = "학년반을 선택해주세요.";
+    memberModalError.style.display = "block";
+    return;
+  }
+  if (phone && !/^\d{11}$/.test(phone)) {
+    memberModalError.textContent = "전화번호는 숫자 11자리로 입력해주세요.";
     memberModalError.style.display = "block";
     return;
   }
@@ -232,17 +253,9 @@ memberModalSaveBtn.addEventListener("click", async () => {
   const toast = showToast(editingMemberId ? "수정 처리 중입니다..." : "등록 처리 중입니다...");
   memberModalSaveBtn.disabled = true;
   try {
-    let res;
-    if (editingMemberId) {
-      res = await updateMember({ 회원ID: id, 이름: name, 학년반: division, 전화: phone });
-    } else {
-      if (await memberExists(id)) {
-        toast.fail("이미 존재하는 회원ID입니다: " + id);
-        memberModalSaveBtn.disabled = false;
-        return;
-      }
-      res = await createMember({ 회원ID: id, 이름: name, 학년반: division, 전화: phone });
-    }
+    const res = editingMemberId
+      ? await updateMember({ 회원ID: id, 이름: name, 학년반: division, 전화: phone })
+      : await createMember({ 회원ID: id, 이름: name, 학년반: division, 전화: phone });
 
     if (res.success) {
       toast.complete(editingMemberId ? "수정했습니다" : "등록했습니다");
@@ -251,7 +264,7 @@ memberModalSaveBtn.addEventListener("click", async () => {
       const updated = { 회원ID: id, 이름: name, 학년반: division, 전화: phone };
       if (idx >= 0) allMembers[idx] = updated;
       else allMembers.push(updated);
-      memberCountEl.textContent = `전체 ${allMembers.length}명 — 검색해서 좁혀보세요`;
+      populateDivisionOptions();
       memberSearchInput.dispatchEvent(new Event("input"));
     } else {
       toast.fail(res.error || "처리에 실패했습니다.");
