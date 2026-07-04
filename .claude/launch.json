@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "static-site-admin",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8100", "--directory", "C:\\Users\\parks\\OneDrive\\Desktop\\AttendMate_Admin"],
+      "port": 8100
+    }
+  ]
+}

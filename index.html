@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리자 — AttendMate_Admin</title>
+<meta name="description" content="AttendMate 회원/네임카드/타임 제어 관리자 페이지">
+<link rel="stylesheet" href="assets/css/tokens.css?v=1">
+<link rel="stylesheet" href="assets/css/base.css?v=1">
+<link rel="stylesheet" href="assets/css/components.css?v=1">
+<link rel="stylesheet" href="assets/css/admin.css?v=1">
+</head>
+<body>
+
+<div id="passwordGate" class="password-gate">
+  <div class="password-gate__card">
+    <h1 class="text-tagline on-light">AttendMate_Admin</h1>
+    <p class="text-caption" style="color: var(--color-ink-muted-48);">비밀번호를 입력하세요</p>
+    <input id="passwordInput" class="search-input" style="width:100%;" type="password" placeholder="비밀번호" autocomplete="off">
+    <div id="passwordError" class="password-gate__error text-caption" style="display:none;">비밀번호가 올바르지 않습니다</div>
+    <button id="passwordSubmitBtn" class="btn-primary" style="width:100%;">입장</button>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
+  <nav class="global-nav">
+    <div class="app-switcher">
+      <button id="appSwitcherBtn" type="button" class="app-switcher__trigger">
+        <span class="text-nav-link" style="font-weight:600;">AttendMate_Admin</span>
+        <svg class="app-switcher__chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div id="appSwitcherMenu" class="app-switcher__menu" style="display:none;">
+        <span class="app-switcher__item app-switcher__item--current">관리자</span>
+        <a class="app-switcher__item" href="https://suuuuuuungho.github.io/AttendMate/">좌석 배치 현황</a>
+        <a class="app-switcher__item" href="https://suuuuuuungho.github.io/AttendMate_Stat/">출석 통계</a>
+      </div>
+    </div>
+    <div class="global-nav__actions">
+      <span id="lastUpdated" class="text-caption" style="opacity:0.85;"></span>
+    </div>
+  </nav>
+
+  <div class="sub-nav-frosted">
+    <span class="sub-nav-frosted__title">관리자</span>
+  </div>
+
+  <div class="admin-tabs">
+    <button type="button" class="admin-tab" data-tab="member">Member</button>
+    <button type="button" class="admin-tab" data-tab="namecard">NameCard</button>
+    <button type="button" class="admin-tab" data-tab="control">Control Panel</button>
+  </div>
+
+  <main class="admin-page">
+    <!-- ===== Member 탭 ===== -->
+    <section id="tab-member" class="admin-panel">
+      <div class="admin-toolbar">
+        <input id="memberSearchInput" class="search-input" style="flex:1;" type="text" placeholder="이름, 회원ID, 학년반 검색">
+        <button id="memberAddBtn" class="btn-primary">+ 새 회원 등록</button>
+      </div>
+      <div id="memberCount" class="text-caption" style="color: var(--color-ink-muted-48); margin: var(--space-sm) 0;"></div>
+      <div class="member-table-wrap">
+        <table class="member-table">
+          <thead>
+            <tr>
+              <th>회원ID</th>
+              <th>이름</th>
+              <th>학년반</th>
+              <th>전화</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="memberTableBody"></tbody>
+        </table>
+      </div>
+      <div id="memberEmpty" class="stats-empty text-caption" style="display:none;">이름, 회원ID, 학년반으로 검색해주세요.</div>
+    </section>
+
+    <!-- ===== NameCard 탭 (준비 중) ===== -->
+    <section id="tab-namecard" class="admin-panel" style="display:none;">
+      <div class="stats-empty text-caption">NameCard 탭은 준비 중입니다.</div>
+    </section>
+
+    <!-- ===== Control Panel 탭 ===== -->
+    <section id="tab-control" class="admin-panel" style="display:none;">
+      <p class="text-caption" style="color: var(--color-ink-muted-48); margin-bottom: var(--space-md);">
+        비활성화한 타임은 좌석 배치 현황/출석 통계 페이지의 드롭다운에서 사라지고 열람·편집할 수 없습니다.
+      </p>
+      <div id="timeControlList" class="time-control-list"></div>
+      <div id="timeControlUnavailable" class="stats-empty text-caption" style="display:none;">
+        TimeControl 테이블이 아직 없습니다. supabase-timecontrol.sql을 실행해주세요.
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="memberModal" class="modal-overlay" style="display:none">
+  <div class="modal-panel">
+    <h3 class="text-body-strong on-light" id="memberModalTitle">새 회원 등록</h3>
+    <input id="memberIdInput" class="search-input" style="width:100%;" type="text" placeholder="회원ID (숫자)" inputmode="numeric">
+    <input id="memberNameInput" class="search-input" style="width:100%;" type="text" placeholder="이름">
+    <input id="memberDivisionInput" class="search-input" style="width:100%;" type="text" placeholder="학년반 (예: 1-1반, 교사)">
+    <input id="memberPhoneInput" class="search-input" style="width:100%;" type="text" placeholder="전화번호">
+    <div id="memberModalError" class="password-gate__error text-caption" style="display:none;"></div>
+    <div style="display:flex; gap:8px; justify-content:flex-end;">
+      <button id="memberModalCancelBtn" class="btn-secondary-pill">취소</button>
+      <button id="memberModalSaveBtn" class="btn-primary">저장</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="assets/js/admin.js?v=1"></script>
+</body>
+</html>

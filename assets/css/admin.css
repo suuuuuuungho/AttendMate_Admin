@@ -1,0 +1,185 @@
+/* AttendMate_Admin — 관리자 페이지 전용 컴포넌트 */
+
+/* ===================== 비밀번호 게이트 ===================== */
+.password-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-black);
+  padding: var(--space-lg);
+}
+.password-gate__card {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  text-align: center;
+}
+.password-gate__error {
+  color: #ff3b30;
+}
+
+/* ===================== 탭 바 ===================== */
+.admin-tabs {
+  display: flex;
+  gap: 4px;
+  padding: var(--space-sm) var(--space-lg) 0;
+  max-width: var(--container-max);
+  margin: 0 auto;
+}
+.admin-tab {
+  flex: 1;
+  padding: var(--space-sm);
+  border-radius: var(--radius-md);
+  font-family: var(--font-text);
+  font-size: var(--type-caption-strong-size);
+  font-weight: 600;
+  color: var(--color-ink-muted-48);
+  background: var(--color-canvas-parchment);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.admin-tab[aria-selected="true"] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.admin-page {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--space-lg);
+}
+
+/* ===================== Member 탭 ===================== */
+.admin-toolbar {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+.member-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 20px -14px rgba(0, 0, 0, 0.35);
+}
+.member-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-canvas);
+  font-family: var(--font-text);
+  font-size: var(--type-caption-size);
+}
+.member-table th {
+  text-align: left;
+  padding: var(--space-sm);
+  color: var(--color-ink-muted-48);
+  border-bottom: 1px solid var(--color-hairline);
+  white-space: nowrap;
+}
+.member-table td {
+  padding: var(--space-sm);
+  border-bottom: 1px solid var(--color-divider-soft);
+  white-space: nowrap;
+}
+.member-table tr:last-child td { border-bottom: none; }
+.member-table__edit-btn {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* ===================== Control Panel 탭 ===================== */
+.time-control-list {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-canvas);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 20px -14px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.time-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-divider-soft);
+}
+.time-control-row:last-child { border-bottom: none; }
+.time-control-row__label { font-family: var(--font-text); }
+
+.time-control-toggle {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: var(--color-hairline);
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+}
+.time-control-toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform var(--transition-fast);
+}
+.time-control-toggle[aria-checked="true"] { background: var(--color-primary); }
+.time-control-toggle[aria-checked="true"]::after { transform: translateX(18px); }
+
+/* 진행 상태 토스트 — 나머지 페이지들과 동일한 모양. */
+.toast {
+  position: fixed;
+  bottom: var(--space-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 260;
+  max-width: calc(100vw - 2 * var(--space-lg));
+  border-radius: var(--radius-pill);
+  padding: 10px 20px;
+  font-family: var(--font-text);
+  font-size: var(--type-caption-size);
+  color: var(--color-on-dark);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.toast--processing { background: var(--color-ink-muted-48); }
+.toast--success { background: var(--color-primary); }
+.toast--error { background: var(--color-ink); }
+
+/* 모달 (회원 등록/수정) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: var(--space-lg);
+}
+.modal-panel {
+  background: var(--color-canvas);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  max-width: 420px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.stats-empty {
+  padding: var(--space-lg);
+  text-align: center;
+  color: var(--color-ink-muted-48);
+  border: 1px dashed var(--color-hairline);
+  border-radius: var(--radius-md);
+}

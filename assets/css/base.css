@@ -1,0 +1,143 @@
+/* AttendMate_Stat — Base reset & typography utilities (AttendMate와 동일) */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-text);
+  color: var(--color-body);
+  background: var(--color-canvas);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; border: none; background: none; cursor: pointer; }
+ul { margin: 0; padding: 0; list-style: none; }
+
+/* ===== Typography utility classes =====
+   하드코딩 금지 — 모든 텍스트 스타일은 이 클래스들을 통해서만 지정한다. */
+
+.text-hero-display {
+  font-family: var(--font-display);
+  font-size: var(--type-hero-display-size);
+  font-weight: var(--type-hero-display-weight);
+  line-height: var(--type-hero-display-lh);
+  letter-spacing: var(--type-hero-display-ls);
+}
+.text-display-lg {
+  font-family: var(--font-display);
+  font-size: var(--type-display-lg-size);
+  font-weight: var(--type-display-lg-weight);
+  line-height: var(--type-display-lg-lh);
+  letter-spacing: var(--type-display-lg-ls);
+}
+.text-display-md {
+  font-family: var(--font-text);
+  font-size: var(--type-display-md-size);
+  font-weight: var(--type-display-md-weight);
+  line-height: var(--type-display-md-lh);
+  letter-spacing: var(--type-display-md-ls);
+}
+.text-lead {
+  font-family: var(--font-display);
+  font-size: var(--type-lead-size);
+  font-weight: var(--type-lead-weight);
+  line-height: var(--type-lead-lh);
+  letter-spacing: var(--type-lead-ls);
+}
+.text-lead-airy {
+  font-family: var(--font-text);
+  font-size: var(--type-lead-airy-size);
+  font-weight: var(--type-lead-airy-weight);
+  line-height: var(--type-lead-airy-lh);
+  letter-spacing: var(--type-lead-airy-ls);
+}
+.text-tagline {
+  font-family: var(--font-display);
+  font-size: var(--type-tagline-size);
+  font-weight: var(--type-tagline-weight);
+  line-height: var(--type-tagline-lh);
+  letter-spacing: var(--type-tagline-ls);
+}
+.text-body-strong {
+  font-family: var(--font-text);
+  font-size: var(--type-body-strong-size);
+  font-weight: var(--type-body-strong-weight);
+  line-height: var(--type-body-strong-lh);
+  letter-spacing: var(--type-body-strong-ls);
+}
+.text-body {
+  font-family: var(--font-text);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-lh);
+  letter-spacing: var(--type-body-ls);
+}
+.text-dense-link {
+  font-family: var(--font-text);
+  font-size: var(--type-dense-link-size);
+  font-weight: var(--type-dense-link-weight);
+  line-height: var(--type-dense-link-lh);
+  letter-spacing: var(--type-dense-link-ls);
+}
+.text-caption {
+  font-family: var(--font-text);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-lh);
+  letter-spacing: var(--type-caption-ls);
+}
+.text-caption-strong {
+  font-family: var(--font-text);
+  font-size: var(--type-caption-strong-size);
+  font-weight: var(--type-caption-strong-weight);
+  line-height: var(--type-caption-strong-lh);
+  letter-spacing: var(--type-caption-strong-ls);
+}
+.text-button-large {
+  font-family: var(--font-text);
+  font-size: var(--type-button-large-size);
+  font-weight: var(--type-button-large-weight);
+  line-height: var(--type-button-large-lh);
+  letter-spacing: var(--type-button-large-ls);
+}
+.text-button-utility {
+  font-family: var(--font-text);
+  font-size: var(--type-button-utility-size);
+  font-weight: var(--type-button-utility-weight);
+  line-height: var(--type-button-utility-lh);
+  letter-spacing: var(--type-button-utility-ls);
+}
+.text-fine-print {
+  font-family: var(--font-text);
+  font-size: var(--type-fine-print-size);
+  font-weight: var(--type-fine-print-weight);
+  line-height: var(--type-fine-print-lh);
+  letter-spacing: var(--type-fine-print-ls);
+}
+.text-micro-legal {
+  font-family: var(--font-text);
+  font-size: var(--type-micro-legal-size);
+  font-weight: var(--type-micro-legal-weight);
+  line-height: var(--type-micro-legal-lh);
+  letter-spacing: var(--type-micro-legal-ls);
+}
+.text-nav-link {
+  font-family: var(--font-text);
+  font-size: var(--type-nav-link-size);
+  font-weight: var(--type-nav-link-weight);
+  line-height: var(--type-nav-link-lh);
+  letter-spacing: var(--type-nav-link-ls);
+}
+
+/* 색상 유틸 — ink는 라이트 표면, on-dark는 다크 표면 전용 */
+.on-light { color: var(--color-ink); }
+.on-dark  { color: var(--color-body-on-dark); }
+.muted-on-dark { color: var(--color-body-muted); }

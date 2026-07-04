@@ -1,0 +1,151 @@
+/* AttendMate_Stat — Components (AttendMate와 동일한 Apple gallery grammar) */
+
+/* ===================== Buttons ===================== */
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  letter-spacing: var(--type-body-ls);
+  border-radius: var(--radius-pill);
+  padding: 11px 22px;
+  transition: transform var(--transition-fast);
+}
+.btn-primary:active { transform: var(--press-scale); }
+.btn-primary:focus-visible { outline: 2px solid var(--color-primary-focus); outline-offset: 2px; }
+
+.btn-secondary-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-size);
+  letter-spacing: var(--type-body-ls);
+  border-radius: var(--radius-pill);
+  padding: 11px 22px;
+  transition: transform var(--transition-fast);
+}
+.btn-secondary-pill:active { transform: var(--press-scale); }
+
+.btn-dark-utility {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-ink);
+  color: var(--color-on-dark);
+  font-family: var(--font-text);
+  font-size: var(--type-button-utility-size);
+  font-weight: var(--type-button-utility-weight);
+  letter-spacing: var(--type-button-utility-ls);
+  border-radius: var(--radius-sm);
+  padding: 8px 15px;
+  transition: transform var(--transition-fast);
+}
+.btn-dark-utility:active { transform: var(--press-scale); }
+
+/* ===================== Navigation ===================== */
+
+.global-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 44px;
+  background: var(--color-surface-black);
+  color: var(--color-on-dark);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-lg);
+}
+
+/* 좌측 상단 앱 이름 — 눌러서 AttendMate ↔ AttendMate_Stat을 오갈 수 있는 드롭다운. */
+.app-switcher {
+  position: relative;
+}
+.app-switcher__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-on-dark);
+  cursor: pointer;
+}
+.app-switcher__chevron {
+  color: var(--color-on-dark);
+  flex-shrink: 0;
+}
+.app-switcher__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 210;
+  min-width: 160px;
+  background: var(--color-canvas);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.35);
+  padding: var(--space-xxs);
+  flex-direction: column;
+  gap: 2px;
+}
+.app-switcher__item {
+  display: block;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-text);
+  font-size: var(--type-caption-size);
+  color: var(--color-ink);
+  text-decoration: none;
+}
+a.app-switcher__item:hover { background: var(--color-canvas-parchment); }
+.app-switcher__item--current {
+  color: var(--color-ink-muted-48);
+  cursor: default;
+}
+
+.sub-nav-frosted {
+  position: sticky;
+  top: 44px;
+  z-index: 90;
+  height: 52px;
+  background: rgba(245, 245, 247, 0.8);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  color: var(--color-ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-lg);
+}
+.sub-nav-frosted__title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: var(--type-tagline-weight);
+  letter-spacing: var(--type-tagline-ls);
+}
+.sub-nav-frosted__links { display: flex; gap: var(--space-sm); align-items: center; }
+
+/* ===================== Inputs ===================== */
+
+.search-input {
+  display: block;
+  height: 44px;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  border: 1px solid var(--color-hairline-a);
+  border-radius: var(--radius-pill);
+  padding: 12px 20px;
+  font-family: var(--font-text);
+  font-size: var(--type-body-size);
+  outline: none;
+}
+.search-input:focus { border-color: var(--color-primary); }
