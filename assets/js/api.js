@@ -33,7 +33,7 @@ async function fetchAllRows(path) {
 
 export async function getAllMembers() {
   try {
-    const data = await fetchAllRows(`/rest/v1/Member?select=ID,Name,Division,Phone&order=ID.asc`);
+    const data = await fetchAllRows(`/rest/v1/Member?select=ID,Name,Division,Phone&order=Division.asc,Name.asc`);
     return { members: data.map(toMember) };
   } catch (e) {
     return { members: [] };
