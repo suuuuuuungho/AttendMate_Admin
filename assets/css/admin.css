@@ -53,11 +53,50 @@
   padding: var(--space-lg);
 }
 
-/* ===================== Member 탭 ===================== */
+/* ===================== Member 탭 =====================
+   검색창+등록 버튼은 global-nav(44px) + sub-nav-frosted(52px) 아래에 고정해
+   스크롤해도 항상 검색/등록/페이지 크기 조절이 가능하게 한다. */
 .admin-toolbar {
+  position: sticky;
+  top: 96px;
+  z-index: 80;
   display: flex;
   gap: var(--space-sm);
   align-items: center;
+  background: var(--color-canvas);
+  padding: var(--space-sm) 0;
+}
+.admin-toolbar__search {
+  flex: 1 1 auto;
+  min-width: 0; /* 버튼을 밀어내지 않도록 — flex item 기본 min-width:auto가 축소를 막는 문제 방지 */
+}
+.admin-toolbar__add-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.admin-toolbar__meta {
+  position: sticky;
+  top: calc(96px + 60px);
+  z-index: 79;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  background: var(--color-canvas);
+  padding: var(--space-xs) 0 var(--space-sm);
+}
+.admin-toolbar__page-size {
+  flex: 0 0 auto;
+  width: auto;
+  height: 36px;
+  padding: 0 var(--space-sm);
+}
+.member-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-md) 0;
 }
 .member-table-wrap {
   overflow-x: auto;

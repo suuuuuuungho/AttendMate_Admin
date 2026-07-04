@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=4";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=5";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -6,8 +6,8 @@ import {
   updateMember,
   getTimeControls,
   setTimeControl,
-} from "./api.js?v=4";
-import { initAppSwitcher } from "./app-switcher.js?v=4";
+} from "./api.js?v=5";
+import { initAppSwitcher } from "./app-switcher.js?v=5";
 
 initAppSwitcher();
 
@@ -112,6 +112,11 @@ const memberCountEl = document.getElementById("memberCount");
 const memberTableBody = document.getElementById("memberTableBody");
 const memberEmptyEl = document.getElementById("memberEmpty");
 const memberAddBtn = document.getElementById("memberAddBtn");
+const memberPageSizeSelect = document.getElementById("memberPageSizeSelect");
+const memberPagination = document.getElementById("memberPagination");
+const memberPrevPageBtn = document.getElementById("memberPrevPageBtn");
+const memberNextPageBtn = document.getElementById("memberNextPageBtn");
+const memberPageInfo = document.getElementById("memberPageInfo");
 
 const memberModal = document.getElementById("memberModal");
 const memberModalTitle = document.getElementById("memberModalTitle");
@@ -125,20 +130,48 @@ const memberModalSaveBtn = document.getElementById("memberModalSaveBtn");
 
 let editingMemberId = null; // null이면 신규 등록, 값이 있으면 그 회원ID를 수정 중
 
+/* ===== 페이지네이션 — 1487명을 한 번에 다 그리면 스크롤이 너무 길어서 나눠 보여준다 ===== */
+let currentFiltered = [];
+let currentPage = 1;
+
+function getPageSize() {
+  const v = memberPageSizeSelect.value;
+  return v === "all" ? Infinity : parseInt(v, 10);
+}
+
+function renderMemberPage() {
+  const pageSize = getPageSize();
+  const totalPages = Number.isFinite(pageSize) ? Math.max(1, Math.ceil(currentFiltered.length / pageSize)) : 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = Number.isFinite(pageSize) ? (currentPage - 1) * pageSize : 0;
+  const end = Number.isFinite(pageSize) ? start + pageSize : currentFiltered.length;
+  renderMemberTable(currentFiltered.slice(start, end));
+
+  memberPagination.style.display = Number.isFinite(pageSize) && currentFiltered.length ? "flex" : "none";
+  memberPageInfo.textContent = `${currentPage} / ${totalPages} 페이지`;
+  memberPrevPageBtn.disabled = currentPage <= 1;
+  memberNextPageBtn.disabled = currentPage >= totalPages;
+}
+
+function setFilteredMembers(list, countLabel) {
+  currentFiltered = list;
+  currentPage = 1;
+  memberCountEl.textContent = countLabel;
+  renderMemberPage();
+}
+
 async function initMemberTab() {
   memberCountEl.textContent = "명단을 불러오는 중...";
   const res = await getAllMembers();
   allMembers = res.members || [];
   membersLoaded = true;
   populateDivisionOptions();
-  memberCountEl.textContent = `전체 ${allMembers.length}명`;
-  renderMemberTable(allMembers); // 기본 상태는 전체 명단 — 검색은 이 목록을 좁힐 뿐
+  setFilteredMembers(allMembers, `전체 ${allMembers.length}명`); // 기본 상태는 전체 명단 — 검색은 이 목록을 좁힐 뿐
 
   memberSearchInput.addEventListener("input", () => {
     const q = memberSearchInput.value.trim().toLowerCase();
     if (!q) {
-      memberCountEl.textContent = `전체 ${allMembers.length}명`;
-      renderMemberTable(allMembers);
+      setFilteredMembers(allMembers, `전체 ${allMembers.length}명`);
       return;
     }
     const matches = allMembers.filter(
@@ -148,8 +181,20 @@ async function initMemberTab() {
         (m.학년반 || "").toLowerCase().includes(q) ||
         (m.전화 || "").includes(q)
     );
-    memberCountEl.textContent = `${matches.length}명 검색됨`;
-    renderMemberTable(matches.slice(0, 200));
+    setFilteredMembers(matches, `${matches.length}명 검색됨`);
+  });
+
+  memberPageSizeSelect.addEventListener("change", () => {
+    currentPage = 1;
+    renderMemberPage();
+  });
+  memberPrevPageBtn.addEventListener("click", () => {
+    currentPage--;
+    renderMemberPage();
+  });
+  memberNextPageBtn.addEventListener("click", () => {
+    currentPage++;
+    renderMemberPage();
   });
 }
 

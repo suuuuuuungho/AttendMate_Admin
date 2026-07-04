@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>관리자 — AttendMate_Admin</title>
 <meta name="description" content="AttendMate 회원/네임카드/타임 제어 관리자 페이지">
-<link rel="stylesheet" href="assets/css/tokens.css?v=4">
-<link rel="stylesheet" href="assets/css/base.css?v=4">
-<link rel="stylesheet" href="assets/css/components.css?v=4">
-<link rel="stylesheet" href="assets/css/admin.css?v=4">
+<link rel="stylesheet" href="assets/css/tokens.css?v=5">
+<link rel="stylesheet" href="assets/css/base.css?v=5">
+<link rel="stylesheet" href="assets/css/components.css?v=5">
+<link rel="stylesheet" href="assets/css/admin.css?v=5">
 </head>
 <body>
 
@@ -56,10 +56,18 @@
     <!-- ===== Member 탭 ===== -->
     <section id="tab-member" class="admin-panel">
       <div class="admin-toolbar">
-        <input id="memberSearchInput" class="search-input" style="flex:1;" type="text" placeholder="이름, 회원ID, 학년반 검색">
-        <button id="memberAddBtn" class="btn-primary">+ 등록</button>
+        <input id="memberSearchInput" class="search-input admin-toolbar__search" type="text" placeholder="이름, 회원ID, 학년반 검색">
+        <button id="memberAddBtn" class="btn-primary admin-toolbar__add-btn">+ 등록</button>
       </div>
-      <div id="memberCount" class="text-caption" style="color: var(--color-ink-muted-48); margin: var(--space-sm) 0;"></div>
+      <div class="admin-toolbar__meta">
+        <span id="memberCount" class="text-caption" style="color: var(--color-ink-muted-48);"></span>
+        <select id="memberPageSizeSelect" class="search-input admin-toolbar__page-size">
+          <option value="25">25명씩</option>
+          <option value="50" selected>50명씩</option>
+          <option value="100">100명씩</option>
+          <option value="all">전체 보기</option>
+        </select>
+      </div>
       <div class="member-table-wrap">
         <table class="member-table">
           <thead>
@@ -75,6 +83,11 @@
         </table>
       </div>
       <div id="memberEmpty" class="stats-empty text-caption" style="display:none;">검색 결과가 없습니다.</div>
+      <div id="memberPagination" class="member-pagination">
+        <button id="memberPrevPageBtn" type="button" class="btn-secondary-pill">이전</button>
+        <span id="memberPageInfo" class="text-caption"></span>
+        <button id="memberNextPageBtn" type="button" class="btn-secondary-pill">다음</button>
+      </div>
     </section>
 
     <!-- ===== NameCard 탭 (준비 중) ===== -->
@@ -110,6 +123,6 @@
   </div>
 </div>
 
-<script type="module" src="assets/js/admin.js?v=4"></script>
+<script type="module" src="assets/js/admin.js?v=5"></script>
 </body>
 </html>
