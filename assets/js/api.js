@@ -128,12 +128,17 @@ export async function getTimeControls() {
   }
 }
 
+/**
+ * PATCH(수정)만 하면 TIMES에 새 타임을 추가했을 때 TimeControl에 아직 그 행이
+ * 없어서 "찾을 수 없음"으로 실패한다. upsert(POST + on_conflict)로 없으면
+ * 새로 만들고 있으면 갱신하도록 해서, SQL로 미리 행을 심어둘 필요를 없앤다.
+ */
 export async function setTimeControl(time, active) {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/TimeControl?Time=eq.${encodeURIComponent(time)}`, {
-      method: "PATCH",
-      headers: returnRepresentation(),
-      body: JSON.stringify({ Active: active }),
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/TimeControl?on_conflict=Time`, {
+      method: "POST",
+      headers: { ...returnRepresentation(), Prefer: "resolution=merge-duplicates,return=representation" },
+      body: JSON.stringify({ Time: time, Active: active }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
