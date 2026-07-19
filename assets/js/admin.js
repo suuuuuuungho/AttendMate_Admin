@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=5";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=6";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -6,8 +6,8 @@ import {
   updateMember,
   getTimeControls,
   setTimeControl,
-} from "./api.js?v=5";
-import { initAppSwitcher } from "./app-switcher.js?v=5";
+} from "./api.js?v=6";
+import { initAppSwitcher } from "./app-switcher.js?v=6";
 
 initAppSwitcher();
 
