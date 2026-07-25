@@ -210,6 +210,11 @@
 .namecard-slot__result:hover { background: var(--color-canvas-parchment); }
 .namecard-slot__result-meta { color: var(--color-ink-muted-48); white-space: nowrap; }
 
+/* 폰트/크기는 원본 hwp의 DocInfo(FaceName/CharShape) 레코드를 직접 파싱해서 얻은 실제
+   값이다 — 제목 함초롬돋움 10pt, 이름 "프리젠테이션 9 Black" 77pt, 학년반 "프리젠테이션
+   8 ExtraBold" 26pt. 함초롬돋움은 한글 프로그램에 기본 포함된 폰트라 명찰을 인쇄할 PC에
+   한글이 깔려 있으면 그대로 뜬다. "프리젠테이션" 계열은 별도 설치 폰트로 보여서, 없는
+   환경에서는 비슷한 두꺼운 고딕(Pretendard/Noto Sans KR)으로 대체된다. */
 .namecard-card {
   width: 100%;
   height: 100%;
@@ -219,22 +224,24 @@
   justify-content: center;
   gap: 6%;
   text-align: center;
-  font-family: var(--font-text);
   color: var(--color-ink);
 }
 .namecard-card__title {
+  font-family: "함초롬돋움", "HCR Dotum", "Malgun Gothic", sans-serif;
   font-weight: 700;
-  font-size: clamp(8px, 1.5vw, 13px);
+  font-size: clamp(8px, 1.9vw, 14px);
   line-height: 1.3;
 }
 .namecard-card__name {
-  font-weight: 800;
-  font-size: clamp(26px, 6.5vw, 56px);
+  font-family: "프리젠테이션 9 Black", "Pretendard", "Noto Sans KR", sans-serif;
+  font-weight: 900;
+  font-size: clamp(30px, 10vw, 72px);
   line-height: 1;
 }
 .namecard-card__division {
-  font-weight: 700;
-  font-size: clamp(12px, 2.4vw, 19px);
+  font-family: "프리젠테이션 8 ExtraBold", "Pretendard", "Noto Sans KR", sans-serif;
+  font-weight: 800;
+  font-size: clamp(14px, 3.4vw, 25px);
 }
 
 @media print {
@@ -266,9 +273,10 @@
     gap: 0;
   }
   .namecard-slot { border: 1px dashed #ccc; }
-  .namecard-card__title { font-size: 11pt; }
-  .namecard-card__name { font-size: 44pt; }
-  .namecard-card__division { font-size: 18pt; }
+  /* hwp 원본 DocInfo에서 그대로 뽑은 실제 pt 값 — 10 / 77 / 26. */
+  .namecard-card__title { font-size: 10pt; }
+  .namecard-card__name { font-size: 77pt; }
+  .namecard-card__division { font-size: 26pt; }
 }
 
 /* ===================== Control Panel 탭 ===================== */
