@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=14";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=15";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -7,9 +7,9 @@ import {
   getTimeControls,
   setTimeControl,
   getAttendanceLog,
-} from "./api.js?v=14";
-import { initAppSwitcher } from "./app-switcher.js?v=14";
-import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=14";
+} from "./api.js?v=15";
+import { initAppSwitcher } from "./app-switcher.js?v=15";
+import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=15";
 
 initAppSwitcher();
 
@@ -420,11 +420,11 @@ function renderNamecardSlot(index) {
       <div class="namecard-card__title-line1">${NAMECARD_TITLE_LINE1}</div>
       <div class="namecard-card__title-line2">${NAMECARD_TITLE_LINE2}</div>
     </div>
-    <div class="namecard-card__row namecard-card__row--name">
-      <div class="namecard-card__name">${member.이름}</div>
-    </div>
-    <div class="namecard-card__row namecard-card__row--division">
-      <div class="namecard-card__division">${(abbreviateClass(member.학년반) || member.학년반 || "")} 연세중앙</div>
+    <div class="namecard-card__row namecard-card__row--nameblock">
+      <div class="namecard-card__nameblock-inner">
+        <div class="namecard-card__name">${member.이름}</div>
+        <div class="namecard-card__division">${(abbreviateClass(member.학년반) || member.학년반 || "")} 연세중앙</div>
+      </div>
     </div>
     <div class="namecard-card__row namecard-card__row--spacer"></div>
   `;
