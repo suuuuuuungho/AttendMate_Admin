@@ -109,6 +109,18 @@ export async function updateMember({ 회원ID, 이름, 학년반, 전화 }) {
   }
 }
 
+/* ===================== 보고서 ===================== */
+
+/** 보고서 집계용 — 전체 Log(회원ID, 타임)를 페이지네이션으로 다 받아온다. */
+export async function getAttendanceLog() {
+  try {
+    const data = await fetchAllRows(`/rest/v1/Log?select=ID,Time`);
+    return { records: data.map((r) => ({ 회원ID: String(r.ID), 타임: r.Time })) };
+  } catch (e) {
+    return { records: [] };
+  }
+}
+
 /* ===================== 타임 제어 (Control Panel) ===================== */
 
 /**

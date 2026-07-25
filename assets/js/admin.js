@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=8";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=9";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -6,8 +6,10 @@ import {
   updateMember,
   getTimeControls,
   setTimeControl,
-} from "./api.js?v=8";
-import { initAppSwitcher } from "./app-switcher.js?v=8";
+  getAttendanceLog,
+} from "./api.js?v=9";
+import { initAppSwitcher } from "./app-switcher.js?v=9";
+import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=9";
 
 initAppSwitcher();
 
@@ -50,6 +52,7 @@ function initAdmin() {
   initTabs();
   initMemberTab();
   initControlTab();
+  initReportTab();
 }
 
 /* ===================== 탭 전환 ===================== */
@@ -59,6 +62,7 @@ function initTabs() {
     member: document.getElementById("tab-member"),
     namecard: document.getElementById("tab-namecard"),
     control: document.getElementById("tab-control"),
+    report: document.getElementById("tab-report"),
   };
 
   function selectTab(key) {
@@ -354,6 +358,129 @@ async function initControlTab() {
     row.append(label, toggle);
     timeControlListEl.appendChild(row);
   }
+}
+
+/* ===================== 보고서 탭 =====================
+ * 학년 > 반 단위로 타임별 출석 인원과 "전체 인원(1회 이상 참석)"을 집계해서 반별
+ * 소계, 학년별 소계, 전체 합계까지 보여준다. 교사는 GRADE_GROUPS에서 제외하고 집계한다. */
+const reportTableWrap = document.getElementById("reportTableWrap");
+const reportTableHead = document.getElementById("reportTableHead");
+const reportTableBody = document.getElementById("reportTableBody");
+const reportEmptyEl = document.getElementById("reportEmpty");
+const reportRefreshBtn = document.getElementById("reportRefreshBtn");
+
+let reportLoaded = false;
+
+function emptyTimeCounts() {
+  return TIMES.map(() => 0);
+}
+
+/**
+ * members(교사 제외 대상 학년 그룹만 이미 걸러진 상태 아님 — 여기서 그룹별로 직접 필터링)를
+ * 학년 > 반으로 묶어 각 반의 타임별/전체 인원을 계산하고, 반별 소계·학년별 소계 행,
+ * 마지막에 전체 합계 행까지 이어붙인 평평한 행 목록을 만든다.
+ */
+function buildReportRows(members, attendanceByTime, attendedAny) {
+  const groups = [...GRADE_GROUPS.filter((g) => g.key !== "teacher"), { key: "other", label: "기타" }];
+  const rows = [];
+  const grand = { byTime: emptyTimeCounts(), any: 0, total: 0 };
+
+  for (const group of groups) {
+    const gradeMembers = members.filter((m) => (getGradeGroup(m.학년반)?.key || "other") === group.key);
+    if (!gradeMembers.length) continue;
+
+    const byClass = new Map();
+    for (const m of gradeMembers) {
+      const classKey = abbreviateClass(m.학년반) || "미분류";
+      if (!byClass.has(classKey)) byClass.set(classKey, []);
+      byClass.get(classKey).push(m);
+    }
+    const classKeys = [...byClass.keys()].sort((a, b) => a.localeCompare(b, "ko", { numeric: true }));
+
+    const gradeSubtotal = { byTime: emptyTimeCounts(), any: 0, total: 0 };
+    for (const classKey of classKeys) {
+      const classMembers = byClass.get(classKey);
+      const byTime = TIMES.map((t) => classMembers.filter((m) => attendanceByTime.get(t)?.has(m.회원ID)).length);
+      const any = classMembers.filter((m) => attendedAny.has(m.회원ID)).length;
+      rows.push({ type: "class", label: `${group.label} ${classKey}`, byTime, any, total: classMembers.length });
+
+      byTime.forEach((c, i) => (gradeSubtotal.byTime[i] += c));
+      gradeSubtotal.any += any;
+      gradeSubtotal.total += classMembers.length;
+    }
+
+    rows.push({ type: "subtotal", label: `${group.label} 소계`, ...gradeSubtotal });
+    gradeSubtotal.byTime.forEach((c, i) => (grand.byTime[i] += c));
+    grand.any += gradeSubtotal.any;
+    grand.total += gradeSubtotal.total;
+  }
+
+  rows.push({ type: "grand", label: "전체 합계", ...grand });
+  return rows;
+}
+
+function renderReportTable(rows) {
+  reportTableHead.innerHTML =
+    `<th>학년/반</th>` + TIMES.map((t) => `<th>${t}</th>`).join("") + `<th>전체 인원<br>(1회 이상)</th>`;
+
+  reportTableBody.innerHTML = "";
+  for (const row of rows) {
+    const tr = document.createElement("tr");
+    tr.className =
+      row.type === "grand" ? "report-row--grand" : row.type === "subtotal" ? "report-row--subtotal" : "";
+
+    const labelTd = document.createElement("td");
+    labelTd.textContent = row.label;
+    tr.appendChild(labelTd);
+
+    for (const c of row.byTime) {
+      const td = document.createElement("td");
+      td.textContent = `${c}명`;
+      tr.appendChild(td);
+    }
+
+    const anyTd = document.createElement("td");
+    anyTd.textContent = `${row.any}명`;
+    tr.appendChild(anyTd);
+
+    reportTableBody.appendChild(tr);
+  }
+}
+
+async function loadReport() {
+  reportTableWrap.style.display = "none";
+  reportEmptyEl.style.display = "block";
+  reportEmptyEl.textContent = "집계하는 중입니다...";
+
+  const [membersRes, logRes] = await Promise.all([getAllMembers(), getAttendanceLog()]);
+  const members = membersRes.members || [];
+
+  const attendanceByTime = new Map();
+  const attendedAny = new Set();
+  for (const rec of logRes.records) {
+    if (!attendanceByTime.has(rec.타임)) attendanceByTime.set(rec.타임, new Set());
+    attendanceByTime.get(rec.타임).add(rec.회원ID);
+    attendedAny.add(rec.회원ID);
+  }
+
+  const rows = buildReportRows(members, attendanceByTime, attendedAny);
+  if (!rows.length) {
+    reportEmptyEl.textContent = "집계할 데이터가 없습니다.";
+    return;
+  }
+  reportEmptyEl.style.display = "none";
+  reportTableWrap.style.display = "block";
+  renderReportTable(rows);
+}
+
+function initReportTab() {
+  reportRefreshBtn.addEventListener("click", loadReport);
+  const reportTabBtn = document.querySelector('.admin-tab[data-tab="report"]');
+  reportTabBtn.addEventListener("click", () => {
+    if (reportLoaded) return;
+    reportLoaded = true;
+    loadReport();
+  });
 }
 
 /* ===================== 세션 유지 확인 =====================
