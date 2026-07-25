@@ -156,6 +156,9 @@
   min-width: 0;
   min-height: 0;
 }
+/* 명찰이 채워지면 슬롯 자체 여백을 없앤다 — 카드 안쪽 padding-inline이 hwp 원본 셀
+   여백을 정확한 비율로 이미 재현하고 있어서, 슬롯 여백까지 더해지면 비율이 틀어진다. */
+.namecard-slot:has(.namecard-card) { padding: 0; }
 .namecard-slot__add {
   width: 44px;
   height: 44px;
@@ -210,38 +213,68 @@
 .namecard-slot__result:hover { background: var(--color-canvas-parchment); }
 .namecard-slot__result-meta { color: var(--color-ink-muted-48); white-space: nowrap; }
 
-/* 폰트/크기는 원본 hwp의 DocInfo(FaceName/CharShape) 레코드를 직접 파싱해서 얻은 실제
-   값이다 — 제목 함초롬돋움 10pt, 이름 "프리젠테이션 9 Black" 77pt, 학년반 "프리젠테이션
-   8 ExtraBold" 26pt. 함초롬돋움은 한글 프로그램에 기본 포함된 폰트라 명찰을 인쇄할 PC에
-   한글이 깔려 있으면 그대로 뜬다. "프리젠테이션" 계열은 별도 설치 폰트로 보여서, 없는
-   환경에서는 비슷한 두꺼운 고딕(Pretendard/Noto Sans KR)으로 대체된다. */
+/* 실제 명찰에 쓰인 폰트(사용자가 hwp 제작 시 쓴 무료 폰트) — 웹폰트로 그대로 심어서
+   설치 여부와 무관하게 항상 똑같이 렌더링되게 한다. */
+@font-face {
+  font-family: "Freesentation-5Medium";
+  src: url("../fonts/Freesentation-5Medium.ttf") format("truetype");
+  font-weight: 500;
+}
+@font-face {
+  font-family: "Freesentation-8ExtraBold";
+  src: url("../fonts/Freesentation-8ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+}
+@font-face {
+  font-family: "Freesentation-9Black";
+  src: url("../fonts/Freesentation-9Black.ttf") format("truetype");
+  font-weight: 900;
+}
+
+/* 레이아웃/폰트/크기 전부 원본 hwp 파일의 실제 테이블 구조를 직접 파싱해서 얻은 값이다
+   (DocInfo의 FaceName/CharShape 레코드 + BodyText의 표 셀 높이). 각 명찰 칸은 위→아래로
+   여백(10) · 제목(13) · 이름(30) · 학년반(13) · 여백(9) 비율의 5행 표로 정확히 나뉘어
+   있어서 grid-template-rows로 그 비율을 그대로 재현한다 — 임의로 바꾸지 말 것. */
 .namecard-card {
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6%;
+  display: grid;
+  grid-template-rows: 10fr 13fr 30fr 13fr 9fr;
   text-align: center;
   color: var(--color-ink);
+  padding-inline: 1.7%; /* 원본 셀 좌우 여백(1.8mm / 105mm 칸 너비) 비율 그대로 */
 }
-.namecard-card__title {
-  font-family: "함초롬돋움", "HCR Dotum", "Malgun Gothic", sans-serif;
-  font-weight: 700;
-  font-size: clamp(8px, 1.9vw, 14px);
-  line-height: 1.3;
+.namecard-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+}
+.namecard-card__row--title { flex-direction: column; }
+
+.namecard-card__title-line1 {
+  font-family: "Freesentation-8ExtraBold", "Pretendard", "Noto Sans KR", sans-serif;
+  font-weight: 800;
+  font-size: clamp(7px, 1.71vw, 12px);
+  line-height: 1.25;
+}
+.namecard-card__title-line2 {
+  font-family: "Freesentation-5Medium", "Pretendard", "Noto Sans KR", sans-serif;
+  font-weight: 500;
+  font-size: clamp(8px, 1.95vw, 14px);
+  line-height: 1.25;
 }
 .namecard-card__name {
-  font-family: "프리젠테이션 9 Black", "Pretendard", "Noto Sans KR", sans-serif;
+  font-family: "Freesentation-9Black", "Pretendard", "Noto Sans KR", sans-serif;
   font-weight: 900;
-  font-size: clamp(30px, 10vw, 72px);
+  font-size: clamp(30px, 9.4vw, 68px);
   line-height: 1;
 }
 .namecard-card__division {
-  font-family: "프리젠테이션 8 ExtraBold", "Pretendard", "Noto Sans KR", sans-serif;
-  font-weight: 800;
-  font-size: clamp(14px, 3.4vw, 25px);
+  font-family: "Freesentation-9Black", "Pretendard", "Noto Sans KR", sans-serif;
+  font-weight: 900;
+  font-size: clamp(13px, 3.17vw, 23px);
 }
 
 @media print {
@@ -273,8 +306,9 @@
     gap: 0;
   }
   .namecard-slot { border: 1px dashed #ccc; }
-  /* hwp 원본 DocInfo에서 그대로 뽑은 실제 pt 값 — 10 / 77 / 26. */
-  .namecard-card__title { font-size: 10pt; }
+  /* hwp 원본 DocInfo/BodyText에서 그대로 뽑은 실제 pt 값. */
+  .namecard-card__title-line1 { font-size: 14pt; }
+  .namecard-card__title-line2 { font-size: 16pt; }
   .namecard-card__name { font-size: 77pt; }
   .namecard-card__division { font-size: 26pt; }
 }
