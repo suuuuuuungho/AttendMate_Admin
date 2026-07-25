@@ -252,6 +252,8 @@
   overflow: hidden;
 }
 .namecard-card__row--title { flex-direction: column; }
+/* 학년반+연세중앙 줄만 원본처럼 왼쪽으로 붙인다 — 나머지 행(제목/이름)은 계속 중앙정렬. */
+.namecard-card__row--division { justify-content: flex-start; }
 
 .namecard-card__title-line1 {
   font-family: "Freesentation-8ExtraBold", "Pretendard", "Noto Sans KR", sans-serif;
@@ -262,7 +264,7 @@
 .namecard-card__title-line2 {
   font-family: "Freesentation-5Medium", "Pretendard", "Noto Sans KR", sans-serif;
   font-weight: 500;
-  font-size: clamp(8px, 1.95vw, 14px);
+  font-size: clamp(7px, 1.59vw, 11px);
   line-height: 1.25;
 }
 .namecard-card__name {
@@ -306,9 +308,9 @@
     gap: 0;
   }
   .namecard-slot { border: 1px dashed #ccc; }
-  /* hwp 원본 DocInfo/BodyText에서 그대로 뽑은 실제 pt 값. */
+  /* hwp 원본 DocInfo/BodyText에서 뽑은 값 — title-line2는 실제 인쇄물과 대조해서 13pt로 보정. */
   .namecard-card__title-line1 { font-size: 14pt; }
-  .namecard-card__title-line2 { font-size: 16pt; }
+  .namecard-card__title-line2 { font-size: 13pt; }
   .namecard-card__name { font-size: 77pt; }
   .namecard-card__division { font-size: 26pt; }
 }

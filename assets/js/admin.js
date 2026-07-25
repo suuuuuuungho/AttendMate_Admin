@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=13";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=14";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -7,9 +7,9 @@ import {
   getTimeControls,
   setTimeControl,
   getAttendanceLog,
-} from "./api.js?v=13";
-import { initAppSwitcher } from "./app-switcher.js?v=13";
-import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=13";
+} from "./api.js?v=14";
+import { initAppSwitcher } from "./app-switcher.js?v=14";
+import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=14";
 
 initAppSwitcher();
 
