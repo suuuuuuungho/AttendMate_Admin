@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=9";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=10";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -7,9 +7,9 @@ import {
   getTimeControls,
   setTimeControl,
   getAttendanceLog,
-} from "./api.js?v=9";
-import { initAppSwitcher } from "./app-switcher.js?v=9";
-import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=9";
+} from "./api.js?v=10";
+import { initAppSwitcher } from "./app-switcher.js?v=10";
+import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=10";
 
 initAppSwitcher();
 
@@ -51,6 +51,7 @@ function initAdmin() {
   initialized = true;
   initTabs();
   initMemberTab();
+  initNameCardTab();
   initControlTab();
   initReportTab();
 }
@@ -316,6 +317,119 @@ memberModalSaveBtn.addEventListener("click", async () => {
     memberModalSaveBtn.disabled = false;
   }
 });
+
+/* ===================== NameCard 탭 =====================
+ * 성회 명찰 메일머지 Template.hwp(A4, 2x4=8칸)를 그대로 웹에서 재현한다. 슬롯을 누르면
+ * 검색창이 뜨고, 학생을 고르면 그 자리에 실제 명찰(제목/이름/학년반)이 채워진다.
+ * "인쇄" 버튼은 브라우저 인쇄 대화상자를 열어 @media print 레이아웃(A4, 2x4)으로 출력한다. */
+const NAMECARD_TITLE_LINE1 = "2026 중고등부 하계성회 [중등부]";
+const NAMECARD_TITLE_LINE2 = "오직 성령 안에서 무너지지 않는 믿음을 세워가라";
+const NAMECARD_SLOT_COUNT = 8;
+
+const namecardSheetEl = document.getElementById("namecardSheet");
+const namecardPrintBtn = document.getElementById("namecardPrintBtn");
+
+let namecardSlots = new Array(NAMECARD_SLOT_COUNT).fill(null); // index -> 회원 객체 | null
+let namecardSearchingIndex = null; // 검색창이 열려 있는 슬롯 — 한 번에 하나만 연다
+
+function renderNamecardSlot(index) {
+  const slotEl = namecardSheetEl.querySelector(`.namecard-slot[data-index="${index}"]`);
+  const member = namecardSlots[index];
+
+  if (namecardSearchingIndex === index) {
+    slotEl.className = "namecard-slot namecard-slot--searching";
+    slotEl.innerHTML = "";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "search-input namecard-slot__search-input";
+    input.placeholder = "이름, 회원ID, 학년반 검색";
+
+    const results = document.createElement("div");
+    results.className = "namecard-slot__results";
+
+    input.addEventListener("input", async () => {
+      if (!membersLoaded) await initMemberTab();
+      const q = input.value.trim().toLowerCase();
+      results.innerHTML = "";
+      if (!q) return;
+      const matches = allMembers
+        .filter(
+          (m) =>
+            m.이름.toLowerCase().includes(q) ||
+            m.회원ID.toLowerCase().includes(q) ||
+            (m.학년반 || "").toLowerCase().includes(q)
+        )
+        .slice(0, 8);
+      for (const m of matches) {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "namecard-slot__result";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = m.이름;
+        const metaSpan = document.createElement("span");
+        metaSpan.className = "namecard-slot__result-meta";
+        metaSpan.textContent = abbreviateClass(m.학년반) || m.학년반 || "";
+        row.append(nameSpan, metaSpan);
+        row.addEventListener("click", () => {
+          namecardSlots[index] = m;
+          namecardSearchingIndex = null;
+          renderNamecardSlot(index);
+        });
+        results.appendChild(row);
+      }
+    });
+
+    slotEl.append(input, results);
+    input.focus();
+    return;
+  }
+
+  if (!member) {
+    slotEl.className = "namecard-slot";
+    slotEl.innerHTML = "";
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "namecard-slot__add";
+    addBtn.textContent = "+";
+    addBtn.addEventListener("click", () => {
+      namecardSearchingIndex = index;
+      renderNamecardSlot(index);
+    });
+    slotEl.appendChild(addBtn);
+    return;
+  }
+
+  slotEl.className = "namecard-slot";
+  slotEl.innerHTML = "";
+  const clearBtn = document.createElement("button");
+  clearBtn.type = "button";
+  clearBtn.className = "namecard-slot__clear";
+  clearBtn.setAttribute("aria-label", "비우기");
+  clearBtn.textContent = "×";
+  clearBtn.addEventListener("click", () => {
+    namecardSlots[index] = null;
+    renderNamecardSlot(index);
+  });
+
+  const card = document.createElement("div");
+  card.className = "namecard-card";
+  card.innerHTML = `
+    <div class="namecard-card__title">
+      <div>${NAMECARD_TITLE_LINE1}</div>
+      <div>${NAMECARD_TITLE_LINE2}</div>
+    </div>
+    <div class="namecard-card__name">${member.이름}</div>
+    <div class="namecard-card__division">${(abbreviateClass(member.학년반) || member.학년반 || "")} 연세중앙</div>
+  `;
+
+  slotEl.append(clearBtn, card);
+}
+
+function initNameCardTab() {
+  for (let i = 0; i < NAMECARD_SLOT_COUNT; i++) renderNamecardSlot(i);
+  namecardPrintBtn.addEventListener("click", () => window.print());
+}
 
 /* ===================== Control Panel 탭 ===================== */
 const timeControlListEl = document.getElementById("timeControlList");

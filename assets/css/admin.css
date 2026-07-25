@@ -128,6 +128,149 @@
   font-weight: 600;
 }
 
+/* ===================== NameCard 탭 =====================
+   성회 명찰 메일머지 Template.hwp를 그대로 재현 — A4 세로, 2열x4행=8칸.
+   화면에서는 A4 비율(210:297)을 유지한 채 축소해서 보여주고, 인쇄 시에는
+   실제 A4 크기(mm)로 고정한다. */
+.namecard-sheet {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--color-hairline);
+  border: 1px solid var(--color-hairline);
+  aspect-ratio: 210 / 297;
+  max-width: 640px;
+  margin: 0 auto;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 6px 20px -14px rgba(0, 0, 0, 0.35);
+}
+.namecard-slot {
+  position: relative;
+  background: var(--color-canvas);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm);
+  min-width: 0;
+  min-height: 0;
+}
+.namecard-slot__add {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px dashed var(--color-hairline);
+  color: var(--color-ink-muted-48);
+  font-size: 24px;
+  line-height: 1;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+.namecard-slot__add:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+.namecard-slot__clear {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--color-ink-muted-48);
+  font-size: 14px;
+  line-height: 1;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.namecard-slot__clear:hover { background: #ff3b30; color: #ffffff; }
+
+.namecard-slot--searching {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 6px;
+}
+.namecard-slot__search-input { width: 100%; height: 34px; }
+.namecard-slot__results {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+.namecard-slot__result {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font-size: var(--type-caption-size);
+  color: var(--color-ink);
+}
+.namecard-slot__result:hover { background: var(--color-canvas-parchment); }
+.namecard-slot__result-meta { color: var(--color-ink-muted-48); white-space: nowrap; }
+
+.namecard-card {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6%;
+  text-align: center;
+  font-family: var(--font-text);
+  color: var(--color-ink);
+}
+.namecard-card__title {
+  font-weight: 700;
+  font-size: clamp(8px, 1.5vw, 13px);
+  line-height: 1.3;
+}
+.namecard-card__name {
+  font-weight: 800;
+  font-size: clamp(26px, 6.5vw, 56px);
+  line-height: 1;
+}
+.namecard-card__division {
+  font-weight: 700;
+  font-size: clamp(12px, 2.4vw, 19px);
+}
+
+@media print {
+  body * { visibility: hidden; }
+  #tab-namecard, #tab-namecard * { visibility: visible; }
+  #tab-namecard {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+  #tab-namecard .admin-toolbar,
+  .namecard-slot__add,
+  .namecard-slot__clear,
+  .namecard-slot__search-input,
+  .namecard-slot__results {
+    display: none !important;
+  }
+  @page { size: A4; margin: 0; }
+  .namecard-sheet {
+    aspect-ratio: unset;
+    width: 210mm;
+    height: 297mm;
+    max-width: none;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    gap: 0;
+  }
+  .namecard-slot { border: 1px dashed #ccc; }
+  .namecard-card__title { font-size: 11pt; }
+  .namecard-card__name { font-size: 44pt; }
+  .namecard-card__division { font-size: 18pt; }
+}
+
 /* ===================== Control Panel 탭 ===================== */
 .time-control-list {
   display: flex;

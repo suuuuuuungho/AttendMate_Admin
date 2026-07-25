@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>관리자 — AttendMate_Admin</title>
 <meta name="description" content="AttendMate 회원/네임카드/타임 제어 관리자 페이지">
-<link rel="stylesheet" href="assets/css/tokens.css?v=9">
-<link rel="stylesheet" href="assets/css/base.css?v=9">
-<link rel="stylesheet" href="assets/css/components.css?v=9">
-<link rel="stylesheet" href="assets/css/admin.css?v=9">
+<link rel="stylesheet" href="assets/css/tokens.css?v=10">
+<link rel="stylesheet" href="assets/css/base.css?v=10">
+<link rel="stylesheet" href="assets/css/components.css?v=10">
+<link rel="stylesheet" href="assets/css/admin.css?v=10">
 </head>
 <body>
 
@@ -91,9 +91,22 @@
       </div>
     </section>
 
-    <!-- ===== NameCard 탭 (준비 중) ===== -->
+    <!-- ===== NameCard 탭 ===== -->
     <section id="tab-namecard" class="admin-panel" style="display:none;">
-      <div class="stats-empty text-caption">NameCard 탭은 준비 중입니다.</div>
+      <div class="admin-toolbar" style="top: 96px;">
+        <span class="text-caption" style="color: var(--color-ink-muted-48);">칸을 눌러 학생을 검색하고 선택하면 명찰이 채워집니다.</span>
+        <button id="namecardPrintBtn" type="button" class="btn-primary" style="margin-left:auto;">인쇄</button>
+      </div>
+      <div id="namecardSheet" class="namecard-sheet">
+        <div class="namecard-slot" data-index="0"></div>
+        <div class="namecard-slot" data-index="1"></div>
+        <div class="namecard-slot" data-index="2"></div>
+        <div class="namecard-slot" data-index="3"></div>
+        <div class="namecard-slot" data-index="4"></div>
+        <div class="namecard-slot" data-index="5"></div>
+        <div class="namecard-slot" data-index="6"></div>
+        <div class="namecard-slot" data-index="7"></div>
+      </div>
     </section>
 
     <!-- ===== Control Panel 탭 ===== -->
@@ -141,6 +154,6 @@
   </div>
 </div>
 
-<script type="module" src="assets/js/admin.js?v=9"></script>
+<script type="module" src="assets/js/admin.js?v=10"></script>
 </body>
 </html>
