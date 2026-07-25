@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=18";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=19";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -9,9 +9,10 @@ import {
   getAttendanceLog,
   saveNameCardBatch,
   getNameCardBatches,
-} from "./api.js?v=18";
-import { initAppSwitcher } from "./app-switcher.js?v=18";
-import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=18";
+  deleteNameCardBatch,
+} from "./api.js?v=19";
+import { initAppSwitcher } from "./app-switcher.js?v=19";
+import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=19";
 
 initAppSwitcher();
 
@@ -342,6 +343,7 @@ const namecardPrintBtn = document.getElementById("namecardPrintBtn");
 const namecardSaveBtn = document.getElementById("namecardSaveBtn");
 const namecardResetBtn = document.getElementById("namecardResetBtn");
 const namecardBatchSelect = document.getElementById("namecardBatchSelect");
+const namecardBatchDeleteBtn = document.getElementById("namecardBatchDeleteBtn");
 const namecardGenerateBtn = document.getElementById("namecardGenerateBtn");
 const namecardGenerateModal = document.getElementById("namecardGenerateModal");
 const namecardGenerateGroupsEl = document.getElementById("namecardGenerateGroups");
@@ -422,10 +424,11 @@ async function refreshNamecardBatchList() {
   const { batches } = await getNameCardBatches();
   namecardBatches = batches;
   namecardBatchSelect.innerHTML =
-    `<option value="">저장된 출력 불러오기</option>` +
+    `<option value="">저장된 파일 불러오기</option>` +
     batches
       .map((b) => `<option value="${b.id}">${String(b.id).padStart(3, "0")} 명찰출력 (${b.members.length}명)</option>`)
       .join("");
+  namecardBatchDeleteBtn.disabled = !namecardBatchSelect.value;
 }
 
 function renderNamecardSlot(index) {
@@ -640,6 +643,7 @@ function initNameCardTab() {
       toast.complete(`${nnn} 명찰출력 저장했습니다`);
       await refreshNamecardBatchList();
       namecardBatchSelect.value = String(res.batch.id);
+      namecardBatchDeleteBtn.disabled = false;
     } else {
       toast.fail(res.error || "저장에 실패했습니다.");
     }
@@ -647,12 +651,28 @@ function initNameCardTab() {
 
   namecardBatchSelect.addEventListener("change", () => {
     const id = namecardBatchSelect.value;
+    namecardBatchDeleteBtn.disabled = !id;
     if (!id) return;
     const batch = namecardBatches.find((b) => String(b.id) === id);
     if (!batch) return;
     namecardSlots = batch.members.map((m) => (m.title1 !== undefined ? { ...m, style: m.style || {} } : makeNamecardEntry(m)));
     namecardSearchingIndex = null;
     renderNamecardPages();
+  });
+
+  namecardBatchDeleteBtn.addEventListener("click", async () => {
+    const id = namecardBatchSelect.value;
+    if (!id) return;
+    const label = namecardBatchSelect.selectedOptions[0]?.textContent || `${id}번`;
+    if (!confirm(`"${label}"를 삭제할까요? 되돌릴 수 없습니다.`)) return;
+    const toast = showToast("삭제 중입니다...");
+    const res = await deleteNameCardBatch(id);
+    if (res.success) {
+      toast.complete("삭제했습니다");
+      await refreshNamecardBatchList();
+    } else {
+      toast.fail(res.error || "삭제에 실패했습니다.");
+    }
   });
 
   namecardGenerateBtn.addEventListener("click", async () => {
@@ -814,14 +834,7 @@ function renderReportTable(rows) {
   reportTableBody.innerHTML = "";
   for (const row of rows) {
     const tr = document.createElement("tr");
-    const classes = [];
-    if (row.type === "grand") classes.push("report-row--grand");
-    else if (row.type === "subtotal") classes.push("report-row--subtotal");
-    if (row.cssVar) {
-      classes.push("report-row--graded");
-      tr.style.setProperty("--grade-color", `var(${row.cssVar})`);
-    }
-    tr.className = classes.join(" ");
+    tr.className = row.type === "grand" ? "report-row--grand" : row.type === "subtotal" ? "report-row--subtotal" : "";
 
     const labelTd = document.createElement("td");
     labelTd.textContent = row.label;
@@ -874,26 +887,19 @@ function cssVar(name, fallback) {
   return v || fallback;
 }
 
-/** 헥스 색을 흰색과 ratio 비율로 섞는다 (0=흰색, 1=원색) — 화면의 옅은 배경 톤과 맞추기 위함. */
-function mixWithWhite(hex, ratio) {
-  const n = parseInt(hex.replace("#", ""), 16);
-  const r = (n >> 16) & 255,
-    g = (n >> 8) & 255,
-    b = n & 255;
-  const mix = (c) => Math.round(c * ratio + 255 * (1 - ratio));
-  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
-}
+const REPORT_TITLE = "2026 중고등부 하계성회 중등부 인원 Report";
+const REPORT_FONT = 'Freesentation-5Medium, Pretendard, "Noto Sans KR", sans-serif';
 
-/** 현재 보고서 행들을 화면 표와 같은 배색으로 <canvas>에 직접 그려서 카카오톡 등에 바로 붙여넣을 수 있는 이미지를 만든다. */
+/** 현재 보고서 행들을 화면 표와 같은 배색으로 <canvas>에 직접 그려서 카카오톡 등에 바로 붙여넣을 수 있는 이미지를 만든다.
+ * 반 행은 색을 넣지 않고, 학년별 소계는 옅은 회색, 전체 합계만 인디고 배경 — 전부 가운데 정렬. */
 function buildReportCanvas(rows) {
   const dpr = window.devicePixelRatio || 1;
-  const rowH = 32,
-    headerH = 38,
-    titleH = 44,
-    padX = 10;
-  const labelColW = 96;
-  const anyColW = 90;
-  const timeColW = 92;
+  const rowH = 40,
+    headerH = 46,
+    titleH = 56;
+  const labelColW = 110;
+  const anyColW = 110;
+  const timeColW = 108;
   const cols = ["학년 반", "전체 인원(1회 이상)", ...TIMES];
   const colWidths = [labelColW, anyColW, ...TIMES.map(() => timeColW)];
   const tableW = colWidths.reduce((a, b) => a + b, 0);
@@ -904,6 +910,8 @@ function buildReportCanvas(rows) {
   canvas.height = tableH * dpr;
   const ctx = canvas.getContext("2d");
   ctx.scale(dpr, dpr);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
 
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, tableW, tableH);
@@ -912,56 +920,44 @@ function buildReportCanvas(rows) {
   ctx.fillStyle = cssVar("--color-primary", "#5856d6");
   ctx.fillRect(0, 0, tableW, titleH);
   ctx.fillStyle = "#ffffff";
-  ctx.textBaseline = "middle";
-  ctx.font = "700 15px sans-serif";
-  ctx.textAlign = "left";
-  ctx.fillText("출석 Report", padX, titleH / 2);
-  ctx.font = "400 11px sans-serif";
-  ctx.textAlign = "right";
-  const now = new Date();
-  ctx.fillText(`${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()} 기준`, tableW - padX, titleH / 2);
+  ctx.font = `700 19px ${REPORT_FONT}`;
+  ctx.fillText(REPORT_TITLE, tableW / 2, titleH / 2);
 
   // 헤더
   let y = titleH;
   ctx.fillStyle = "#f5f5f7";
   ctx.fillRect(0, y, tableW, headerH);
   ctx.fillStyle = "#7a7a7a";
-  ctx.font = "600 11px sans-serif";
+  ctx.font = `600 15px ${REPORT_FONT}`;
   let x = 0;
   cols.forEach((c, i) => {
-    ctx.textAlign = i === 0 ? "left" : "right";
-    const tx = i === 0 ? x + padX : x + colWidths[i] - padX;
-    ctx.fillText(c, tx, y + headerH / 2);
+    ctx.fillText(c, x + colWidths[i] / 2, y + headerH / 2);
     x += colWidths[i];
   });
   y += headerH;
 
-  // 행
+  // 행 — 반은 흰 배경, 학년별 소계는 옅은 회색, 전체 합계만 인디고.
   for (const row of rows) {
     let bg = "#ffffff";
     let fg = "#1d1d1f";
     let weight = "400";
-    if (row.type === "class" && row.cssVar) {
-      bg = mixWithWhite(cssVar(row.cssVar, "#ffffff"), 0.22);
-    } else if (row.type === "subtotal") {
-      bg = row.cssVar ? mixWithWhite(cssVar(row.cssVar, "#ffffff"), 0.4) : "#f5f5f7";
+    if (row.type === "subtotal") {
+      bg = "#f5f5f7";
       weight = "700";
     } else if (row.type === "grand") {
-      bg = cssVar("--color-primary-soft", "#eeeeff");
-      fg = cssVar("--color-primary", "#5856d6");
+      bg = cssVar("--color-primary", "#5856d6");
+      fg = "#ffffff";
       weight = "700";
     }
     ctx.fillStyle = bg;
     ctx.fillRect(0, y, tableW, rowH);
 
     ctx.fillStyle = fg;
-    ctx.font = `${weight} 12px sans-serif`;
+    ctx.font = `${weight} 16px ${REPORT_FONT}`;
     x = 0;
     const values = [row.label, `${row.any}명`, ...row.byTime.map((c) => `${c}명`)];
     values.forEach((v, i) => {
-      ctx.textAlign = i === 0 ? "left" : "right";
-      const tx = i === 0 ? x + padX : x + colWidths[i] - padX;
-      ctx.fillText(v, tx, y + rowH / 2);
+      ctx.fillText(v, x + colWidths[i] / 2, y + rowH / 2);
       x += colWidths[i];
     });
 
@@ -985,9 +981,14 @@ function buildReportCanvas(rows) {
 }
 
 /** 표를 클릭하면 이미지로 만들어 클립보드에 바로 복사 — 클립보드 이미지 쓰기가 안 되는 환경이면 파일로 대신 다운로드한다. */
-function copyReportAsImage() {
+async function copyReportAsImage() {
   if (!currentReportRows.length) return;
   const toast = showToast("이미지를 만드는 중입니다...");
+  // 캔버스는 아직 로드 안 된 폰트를 조용히 기본 폰트로 대체해버리므로, 그리기 전에 확실히 로드해둔다.
+  try {
+    await document.fonts.load(`700 19px "Freesentation-5Medium"`);
+    await document.fonts.load(`400 16px "Freesentation-5Medium"`);
+  } catch (e) {}
   const canvas = buildReportCanvas(currentReportRows);
   canvas.toBlob(async (blob) => {
     if (!blob) {

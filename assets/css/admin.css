@@ -530,57 +530,56 @@
 }
 
 /* ===================== 보고서 탭 =====================
-   표를 클릭하면 이미지로 복사되는 숨은 기능이 있어 커서로 클릭 가능함을 알려준다. */
+   표를 클릭하면 이미지로 복사되는 숨은 기능이 있어 커서로 클릭 가능함을 알려준다.
+   반 행은 색 없이, 학년별 소계는 옅은 회색, 전체 합계만 인디고 배경 — 전부 가운데 정렬,
+   폰트는 Freesentation Medium(명찰 탭과 동일하게 웹폰트로 심어둔 것을 그대로 재사용). */
 .report-table-wrap {
   overflow-x: auto;
   border-radius: var(--radius-md);
   box-shadow: 0 6px 20px -14px rgba(0, 0, 0, 0.35);
   cursor: pointer;
 }
+.report-title {
+  background: var(--color-primary);
+  color: #ffffff;
+  font-family: "Freesentation-5Medium", "Pretendard", "Noto Sans KR", sans-serif;
+  font-weight: 700;
+  font-size: 19px;
+  text-align: center;
+  padding: var(--space-md);
+}
 .report-table {
   width: 100%;
   border-collapse: collapse;
   background: var(--color-canvas);
-  font-family: var(--font-text);
-  font-size: var(--type-caption-size);
+  font-family: "Freesentation-5Medium", "Pretendard", "Noto Sans KR", sans-serif;
+  font-size: 16px;
 }
 .report-table th {
-  text-align: right;
+  text-align: center;
   padding: var(--space-sm);
   color: var(--color-ink-muted-48);
+  font-size: 15px;
+  font-weight: 600;
   border-bottom: 1px solid var(--color-hairline);
   white-space: nowrap;
 }
-.report-table th:first-child { text-align: left; }
 .report-table td {
   padding: var(--space-sm);
-  text-align: right;
+  text-align: center;
   border-bottom: 1px solid var(--color-divider-soft);
   white-space: nowrap;
 }
-.report-table td:first-child { text-align: left; }
 .report-table tr:last-child td { border-bottom: none; }
 
 .report-row--subtotal {
   background: var(--color-canvas-parchment);
-  font-weight: 600;
-}
-.report-row--grand {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
   font-weight: 700;
 }
-
-/* 학년별 색 구분 — AttendMate 좌석판/AttendMate_Stat과 같은 파스텔 학년색을 옅게 깔고,
-   맨 왼쪽 열에 진한 색 테두리를 둬서 어느 학년 블록인지 한눈에 보이게 한다. */
-.report-row--graded td:first-child {
-  border-left: 4px solid var(--grade-color, transparent);
-}
-.report-row--graded {
-  background: color-mix(in srgb, var(--grade-color, transparent) 14%, var(--color-canvas));
-}
-.report-row--subtotal.report-row--graded {
-  background: color-mix(in srgb, var(--grade-color, transparent) 30%, var(--color-canvas));
+.report-row--grand {
+  background: var(--color-primary);
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .stats-empty {

@@ -158,6 +158,22 @@ export async function getNameCardBatches() {
   }
 }
 
+export async function deleteNameCardBatch(id) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/NameCardBatch?id=eq.${Number(id)}`, {
+      method: "DELETE",
+      headers: headers(),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { success: false, error: data.message || "삭제에 실패했습니다" };
+    }
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: "네트워크 오류: " + e.message };
+  }
+}
+
 /* ===================== 타임 제어 (Control Panel) ===================== */
 
 /**
