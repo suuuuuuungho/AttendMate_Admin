@@ -132,12 +132,96 @@
    성회 명찰 메일머지 Template.hwp를 그대로 재현 — A4 세로, 2열x4행=8칸.
    화면에서는 A4 비율(210:297)을 유지한 채 축소해서 보여주고, 인쇄 시에는
    실제 A4 크기(mm)로 고정한다. 8명이 넘으면 .namecard-sheet(한 장)가 여러 개
-   생기고, 인쇄 시 장마다 페이지를 나눈다. */
-.namecard-batch-select {
-  width: auto;
+   생기고, 인쇄 시 장마다 페이지를 나눈다.
+
+   툴바는 "1. 템플릿" / "2. 명찰 파일" 두 단계로 라벨을 붙여 순서를 알려주고, 되돌리기
+   힘든 동작(삭제/초기화)은 옅은 색으로 낮춰서 실수로 누르기 쉬운 위치에서 벗어나게 한다.
+   모든 버튼/셀렉트는 36px로 높이를 통일한다. */
+.namecard-toolbar {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-sm);
+}
+.namecard-toolbar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.namecard-toolbar-group__label {
+  font-size: var(--type-fine-print-size);
+  font-weight: 700;
+  color: var(--color-ink);
+}
+.namecard-toolbar-group__hint {
+  font-weight: 400;
+  color: var(--color-ink-muted-48);
+}
+.namecard-toolbar-group__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.namecard-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--color-hairline);
+  margin: 0 2px;
+}
+
+.namecard-select {
   height: 36px;
   padding: 0 var(--space-sm);
+  border: 1px solid var(--color-hairline-a);
+  border-radius: var(--radius-pill);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-text);
   font-size: var(--type-caption-size);
+  outline: none;
+}
+.namecard-select:focus { border-color: var(--color-primary); }
+
+.namecard-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-primary);
+  background: var(--color-canvas);
+  color: var(--color-primary);
+  font-family: var(--font-text);
+  font-size: var(--type-caption-size);
+  font-weight: 600;
+  white-space: nowrap;
+  transition: transform var(--transition-fast), background var(--transition-fast);
+}
+.namecard-btn:active { transform: var(--press-scale); }
+.namecard-btn:disabled { opacity: 0.4; cursor: default; }
+.namecard-btn:disabled:active { transform: none; }
+
+.namecard-btn--accent {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+.namecard-btn--ghost {
+  border-color: transparent;
+  background: var(--color-canvas-parchment);
+  color: var(--color-ink-muted-48);
+}
+.namecard-btn--ghost-danger {
+  border-color: transparent;
+  background: transparent;
+  color: #ff3b30;
+}
+.namecard-btn--ghost-danger:hover { background: rgba(255, 59, 48, 0.08); }
+
+#namecardPrintBtn.namecard-btn--print {
+  height: 36px;
+  padding: 0 22px;
+  font-size: var(--type-caption-strong-size);
 }
 
 .namecard-pages {
@@ -340,7 +424,8 @@
   flex-wrap: wrap;
 }
 .namecard-edit-toolbar__btn {
-  padding: 6px 12px;
+  height: 36px;
+  padding: 0 14px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--color-hairline);
   font-size: var(--type-caption-size);

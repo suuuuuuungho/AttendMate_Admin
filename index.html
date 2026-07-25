@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>관리자 — AttendMate_Admin</title>
 <meta name="description" content="AttendMate 회원/네임카드/타임 제어 관리자 페이지">
-<link rel="stylesheet" href="assets/css/tokens.css?v=20">
-<link rel="stylesheet" href="assets/css/base.css?v=20">
-<link rel="stylesheet" href="assets/css/components.css?v=20">
-<link rel="stylesheet" href="assets/css/admin.css?v=20">
+<link rel="stylesheet" href="assets/css/tokens.css?v=21">
+<link rel="stylesheet" href="assets/css/base.css?v=21">
+<link rel="stylesheet" href="assets/css/components.css?v=21">
+<link rel="stylesheet" href="assets/css/admin.css?v=21">
 </head>
 <body>
 
@@ -93,23 +93,32 @@
 
     <!-- ===== NameCard 탭 ===== -->
     <section id="tab-namecard" class="admin-panel" style="display:none;">
-      <div class="admin-toolbar" style="top: 96px; flex-wrap: wrap;">
-        <span class="text-caption" style="color: var(--color-ink-muted-48);">템플릿을 고른 뒤, 칸을 눌러 학생을 채우세요.</span>
-        <select id="namecardTemplateSelect" class="search-input namecard-batch-select" style="margin-left:auto;"></select>
-        <button id="namecardTemplateEditBtn" type="button" class="btn-secondary-pill">템플릿 편집</button>
-        <button id="namecardTemplateDuplicateBtn" type="button" class="btn-secondary-pill">템플릿 복제</button>
-        <button id="namecardTemplateDeleteBtn" type="button" class="btn-secondary-pill">템플릿 삭제</button>
-      </div>
-      <div class="admin-toolbar" style="top: calc(96px + 52px); flex-wrap: wrap;">
-        <span class="text-caption" style="color: var(--color-ink-muted-48);">칸을 눌러 학생을 검색하거나, 파일 생성으로 반/학년 전체를 채우세요.</span>
-        <select id="namecardBatchSelect" class="search-input namecard-batch-select" style="margin-left:auto;">
-          <option value="">저장된 파일 불러오기</option>
-        </select>
-        <button id="namecardBatchDeleteBtn" type="button" class="btn-secondary-pill" disabled>삭제</button>
-        <button id="namecardGenerateBtn" type="button" class="btn-secondary-pill">파일 생성</button>
-        <button id="namecardResetBtn" type="button" class="btn-secondary-pill">초기화</button>
-        <button id="namecardSaveBtn" type="button" class="btn-secondary-pill">저장</button>
-        <button id="namecardPrintBtn" type="button" class="btn-primary">인쇄</button>
+      <div class="admin-toolbar namecard-toolbar" style="top: 96px;">
+        <div class="namecard-toolbar-group">
+          <div class="namecard-toolbar-group__label">1. 템플릿 &nbsp;<span class="namecard-toolbar-group__hint">명찰 디자인을 고르세요</span></div>
+          <div class="namecard-toolbar-group__row">
+            <select id="namecardTemplateSelect" class="namecard-select"></select>
+            <button id="namecardTemplateEditBtn" type="button" class="namecard-btn">편집</button>
+            <button id="namecardTemplateDuplicateBtn" type="button" class="namecard-btn">복제</button>
+            <span class="namecard-toolbar-divider"></span>
+            <button id="namecardTemplateDeleteBtn" type="button" class="namecard-btn namecard-btn--ghost-danger">삭제</button>
+          </div>
+        </div>
+        <div class="namecard-toolbar-group">
+          <div class="namecard-toolbar-group__label">2. 명찰 파일 &nbsp;<span class="namecard-toolbar-group__hint">칸을 눌러 학생을 채우거나, 파일 생성으로 반/학년 전체를 채우세요</span></div>
+          <div class="namecard-toolbar-group__row">
+            <select id="namecardBatchSelect" class="namecard-select">
+              <option value="">저장된 파일 불러오기</option>
+            </select>
+            <button id="namecardBatchDeleteBtn" type="button" class="namecard-btn namecard-btn--ghost-danger" disabled>삭제</button>
+            <span class="namecard-toolbar-divider"></span>
+            <button id="namecardGenerateBtn" type="button" class="namecard-btn namecard-btn--accent">+ 파일 생성</button>
+            <button id="namecardResetBtn" type="button" class="namecard-btn namecard-btn--ghost">초기화</button>
+            <span class="namecard-toolbar-divider"></span>
+            <button id="namecardSaveBtn" type="button" class="namecard-btn">저장</button>
+            <button id="namecardPrintBtn" type="button" class="btn-primary namecard-btn--print">인쇄</button>
+          </div>
+        </div>
       </div>
       <div id="namecardEditToolbar" class="namecard-edit-toolbar" style="display:none;">
         <span class="text-caption" style="color: var(--color-ink-muted-48);">선택한 글자:</span>
@@ -235,6 +244,6 @@
   </div>
 </div>
 
-<script type="module" src="assets/js/admin.js?v=20"></script>
+<script type="module" src="assets/js/admin.js?v=21"></script>
 </body>
 </html>
