@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=10";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=11";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -7,9 +7,9 @@ import {
   getTimeControls,
   setTimeControl,
   getAttendanceLog,
-} from "./api.js?v=10";
-import { initAppSwitcher } from "./app-switcher.js?v=10";
-import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=10";
+} from "./api.js?v=11";
+import { initAppSwitcher } from "./app-switcher.js?v=11";
+import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=11";
 
 initAppSwitcher();
 
@@ -484,6 +484,7 @@ const reportEmptyEl = document.getElementById("reportEmpty");
 const reportRefreshBtn = document.getElementById("reportRefreshBtn");
 
 let reportLoaded = false;
+let currentReportRows = [];
 
 function emptyTimeCounts() {
   return TIMES.map(() => 0);
@@ -516,14 +517,14 @@ function buildReportRows(members, attendanceByTime, attendedAny) {
       const classMembers = byClass.get(classKey);
       const byTime = TIMES.map((t) => classMembers.filter((m) => attendanceByTime.get(t)?.has(m.회원ID)).length);
       const any = classMembers.filter((m) => attendedAny.has(m.회원ID)).length;
-      rows.push({ type: "class", label: `${group.label} ${classKey}`, byTime, any, total: classMembers.length });
+      rows.push({ type: "class", label: classKey, byTime, any, total: classMembers.length, cssVar: group.cssVar });
 
       byTime.forEach((c, i) => (gradeSubtotal.byTime[i] += c));
       gradeSubtotal.any += any;
       gradeSubtotal.total += classMembers.length;
     }
 
-    rows.push({ type: "subtotal", label: `${group.label} 소계`, ...gradeSubtotal });
+    rows.push({ type: "subtotal", label: `${group.label} 소계`, ...gradeSubtotal, cssVar: group.cssVar });
     gradeSubtotal.byTime.forEach((c, i) => (grand.byTime[i] += c));
     grand.any += gradeSubtotal.any;
     grand.total += gradeSubtotal.total;
@@ -535,27 +536,33 @@ function buildReportRows(members, attendanceByTime, attendedAny) {
 
 function renderReportTable(rows) {
   reportTableHead.innerHTML =
-    `<th>학년/반</th>` + TIMES.map((t) => `<th>${t}</th>`).join("") + `<th>전체 인원<br>(1회 이상)</th>`;
+    `<th>학년 반</th><th>전체 인원<br>(1회 이상)</th>` + TIMES.map((t) => `<th>${t}</th>`).join("");
 
   reportTableBody.innerHTML = "";
   for (const row of rows) {
     const tr = document.createElement("tr");
-    tr.className =
-      row.type === "grand" ? "report-row--grand" : row.type === "subtotal" ? "report-row--subtotal" : "";
+    const classes = [];
+    if (row.type === "grand") classes.push("report-row--grand");
+    else if (row.type === "subtotal") classes.push("report-row--subtotal");
+    if (row.cssVar) {
+      classes.push("report-row--graded");
+      tr.style.setProperty("--grade-color", `var(${row.cssVar})`);
+    }
+    tr.className = classes.join(" ");
 
     const labelTd = document.createElement("td");
     labelTd.textContent = row.label;
     tr.appendChild(labelTd);
+
+    const anyTd = document.createElement("td");
+    anyTd.textContent = `${row.any}명`;
+    tr.appendChild(anyTd);
 
     for (const c of row.byTime) {
       const td = document.createElement("td");
       td.textContent = `${c}명`;
       tr.appendChild(td);
     }
-
-    const anyTd = document.createElement("td");
-    anyTd.textContent = `${row.any}명`;
-    tr.appendChild(anyTd);
 
     reportTableBody.appendChild(tr);
   }
@@ -578,6 +585,7 @@ async function loadReport() {
   }
 
   const rows = buildReportRows(members, attendanceByTime, attendedAny);
+  currentReportRows = rows;
   if (!rows.length) {
     reportEmptyEl.textContent = "집계할 데이터가 없습니다.";
     return;
@@ -587,8 +595,152 @@ async function loadReport() {
   renderReportTable(rows);
 }
 
+/** :root에 정의된 CSS 커스텀 프로퍼티 값을 읽는다 — 캔버스는 var()를 못 쓰니 직접 값을 읽어야 한다. */
+function cssVar(name, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
+/** 헥스 색을 흰색과 ratio 비율로 섞는다 (0=흰색, 1=원색) — 화면의 옅은 배경 톤과 맞추기 위함. */
+function mixWithWhite(hex, ratio) {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const r = (n >> 16) & 255,
+    g = (n >> 8) & 255,
+    b = n & 255;
+  const mix = (c) => Math.round(c * ratio + 255 * (1 - ratio));
+  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+}
+
+/** 현재 보고서 행들을 화면 표와 같은 배색으로 <canvas>에 직접 그려서 카카오톡 등에 바로 붙여넣을 수 있는 이미지를 만든다. */
+function buildReportCanvas(rows) {
+  const dpr = window.devicePixelRatio || 1;
+  const rowH = 32,
+    headerH = 38,
+    titleH = 44,
+    padX = 10;
+  const labelColW = 96;
+  const anyColW = 90;
+  const timeColW = 92;
+  const cols = ["학년 반", "전체 인원(1회 이상)", ...TIMES];
+  const colWidths = [labelColW, anyColW, ...TIMES.map(() => timeColW)];
+  const tableW = colWidths.reduce((a, b) => a + b, 0);
+  const tableH = titleH + headerH + rows.length * rowH;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = tableW * dpr;
+  canvas.height = tableH * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, tableW, tableH);
+
+  // 타이틀
+  ctx.fillStyle = cssVar("--color-primary", "#5856d6");
+  ctx.fillRect(0, 0, tableW, titleH);
+  ctx.fillStyle = "#ffffff";
+  ctx.textBaseline = "middle";
+  ctx.font = "700 15px sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText("출석 Report", padX, titleH / 2);
+  ctx.font = "400 11px sans-serif";
+  ctx.textAlign = "right";
+  const now = new Date();
+  ctx.fillText(`${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()} 기준`, tableW - padX, titleH / 2);
+
+  // 헤더
+  let y = titleH;
+  ctx.fillStyle = "#f5f5f7";
+  ctx.fillRect(0, y, tableW, headerH);
+  ctx.fillStyle = "#7a7a7a";
+  ctx.font = "600 11px sans-serif";
+  let x = 0;
+  cols.forEach((c, i) => {
+    ctx.textAlign = i === 0 ? "left" : "right";
+    const tx = i === 0 ? x + padX : x + colWidths[i] - padX;
+    ctx.fillText(c, tx, y + headerH / 2);
+    x += colWidths[i];
+  });
+  y += headerH;
+
+  // 행
+  for (const row of rows) {
+    let bg = "#ffffff";
+    let fg = "#1d1d1f";
+    let weight = "400";
+    if (row.type === "class" && row.cssVar) {
+      bg = mixWithWhite(cssVar(row.cssVar, "#ffffff"), 0.22);
+    } else if (row.type === "subtotal") {
+      bg = row.cssVar ? mixWithWhite(cssVar(row.cssVar, "#ffffff"), 0.4) : "#f5f5f7";
+      weight = "700";
+    } else if (row.type === "grand") {
+      bg = cssVar("--color-primary-soft", "#eeeeff");
+      fg = cssVar("--color-primary", "#5856d6");
+      weight = "700";
+    }
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, y, tableW, rowH);
+
+    ctx.fillStyle = fg;
+    ctx.font = `${weight} 12px sans-serif`;
+    x = 0;
+    const values = [row.label, `${row.any}명`, ...row.byTime.map((c) => `${c}명`)];
+    values.forEach((v, i) => {
+      ctx.textAlign = i === 0 ? "left" : "right";
+      const tx = i === 0 ? x + padX : x + colWidths[i] - padX;
+      ctx.fillText(v, tx, y + rowH / 2);
+      x += colWidths[i];
+    });
+
+    ctx.strokeStyle = "#e8e8ec";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, y + rowH);
+    ctx.lineTo(tableW, y + rowH);
+    ctx.stroke();
+
+    y += rowH;
+  }
+
+  ctx.strokeStyle = "#e0e0e0";
+  ctx.beginPath();
+  ctx.moveTo(labelColW + anyColW, titleH);
+  ctx.lineTo(labelColW + anyColW, tableH);
+  ctx.stroke();
+
+  return canvas;
+}
+
+/** 표를 클릭하면 이미지로 만들어 클립보드에 바로 복사 — 클립보드 이미지 쓰기가 안 되는 환경이면 파일로 대신 다운로드한다. */
+function copyReportAsImage() {
+  if (!currentReportRows.length) return;
+  const toast = showToast("이미지를 만드는 중입니다...");
+  const canvas = buildReportCanvas(currentReportRows);
+  canvas.toBlob(async (blob) => {
+    if (!blob) {
+      toast.fail("이미지 생성에 실패했습니다.");
+      return;
+    }
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      toast.complete("이미지가 클립보드에 복사되었습니다");
+    } catch (e) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "attendance-report.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.complete("클립보드 복사가 지원되지 않아 이미지를 다운로드했습니다");
+    }
+  }, "image/png");
+}
+
 function initReportTab() {
   reportRefreshBtn.addEventListener("click", loadReport);
+  reportTableWrap.addEventListener("click", copyReportAsImage);
   const reportTabBtn = document.querySelector('.admin-tab[data-tab="report"]');
   reportTabBtn.addEventListener("click", () => {
     if (reportLoaded) return;

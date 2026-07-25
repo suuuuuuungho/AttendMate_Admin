@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>관리자 — AttendMate_Admin</title>
 <meta name="description" content="AttendMate 회원/네임카드/타임 제어 관리자 페이지">
-<link rel="stylesheet" href="assets/css/tokens.css?v=10">
-<link rel="stylesheet" href="assets/css/base.css?v=10">
-<link rel="stylesheet" href="assets/css/components.css?v=10">
-<link rel="stylesheet" href="assets/css/admin.css?v=10">
+<link rel="stylesheet" href="assets/css/tokens.css?v=11">
+<link rel="stylesheet" href="assets/css/base.css?v=11">
+<link rel="stylesheet" href="assets/css/components.css?v=11">
+<link rel="stylesheet" href="assets/css/admin.css?v=11">
 </head>
 <body>
 
@@ -50,7 +50,7 @@
     <button type="button" class="admin-tab" data-tab="member">Member</button>
     <button type="button" class="admin-tab" data-tab="namecard">NameCard</button>
     <button type="button" class="admin-tab" data-tab="control">Control Panel</button>
-    <button type="button" class="admin-tab" data-tab="report">보고서</button>
+    <button type="button" class="admin-tab" data-tab="report">Report</button>
   </div>
 
   <main class="admin-page">
@@ -123,10 +123,10 @@
     <!-- ===== 보고서 탭 ===== -->
     <section id="tab-report" class="admin-panel" style="display:none;">
       <div class="admin-toolbar" style="top: 96px;">
-        <span class="text-caption" style="color: var(--color-ink-muted-48);">※ 교사는 집계에서 제외됩니다.</span>
+        <span class="text-caption" style="color: var(--color-ink-muted-48);">※ 교사는 집계에서 제외됩니다. 표를 클릭하면 이미지로 복사됩니다.</span>
         <button id="reportRefreshBtn" type="button" class="btn-secondary-pill" style="margin-left:auto;">새로고침</button>
       </div>
-      <div id="reportTableWrap" class="report-table-wrap" style="display:none;">
+      <div id="reportTableWrap" class="report-table-wrap" style="display:none;" title="클릭하면 이미지로 복사됩니다">
         <table class="report-table">
           <thead>
             <tr id="reportTableHead"></tr>
@@ -154,6 +154,6 @@
   </div>
 </div>
 
-<script type="module" src="assets/js/admin.js?v=10"></script>
+<script type="module" src="assets/js/admin.js?v=11"></script>
 </body>
 </html>
