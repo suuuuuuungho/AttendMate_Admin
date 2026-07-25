@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=21";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=22";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -14,9 +14,9 @@ import {
   createNameCardTemplate,
   updateNameCardTemplate,
   deleteNameCardTemplate,
-} from "./api.js?v=21";
-import { initAppSwitcher } from "./app-switcher.js?v=21";
-import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=21";
+} from "./api.js?v=22";
+import { initAppSwitcher } from "./app-switcher.js?v=22";
+import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=22";
 
 initAppSwitcher();
 
@@ -484,14 +484,17 @@ function rgbToHex(rgb) {
   );
 }
 
+/** 사용자가 제목을 지어줬으면 그 제목을, 아니면 "NNN 명찰출력" 자동 번호를 쓴다. */
+function namecardBatchLabel(b) {
+  return b.name && b.name.trim() ? b.name.trim() : `${String(b.id).padStart(3, "0")} 명찰출력`;
+}
+
 async function refreshNamecardBatchList() {
   const { batches } = await getNameCardBatches();
   namecardBatches = batches;
   namecardBatchSelect.innerHTML =
     `<option value="">저장된 파일 불러오기</option>` +
-    batches
-      .map((b) => `<option value="${b.id}">${String(b.id).padStart(3, "0")} 명찰출력 (${b.members.length}명)</option>`)
-      .join("");
+    batches.map((b) => `<option value="${b.id}">${escapeHtml(namecardBatchLabel(b))} (${b.members.length}명)</option>`).join("");
   namecardBatchDeleteBtn.disabled = !namecardBatchSelect.value;
 }
 
@@ -703,11 +706,14 @@ function initNameCardTab() {
       showToast("저장 중입니다...").fail("채워진 명찰이 없습니다.");
       return;
     }
+    const suggested = activeTemplate ? `${activeTemplate.name} 출력본` : "";
+    const title = prompt("파일 제목을 입력하세요. (비워두면 자동으로 번호가 매겨집니다)", suggested);
+    if (title === null) return; // 취소
+
     const toast = showToast("저장 중입니다...");
-    const res = await saveNameCardBatch(filled);
+    const res = await saveNameCardBatch(filled, title.trim());
     if (res.success) {
-      const nnn = String(res.batch.id).padStart(3, "0");
-      toast.complete(`${nnn} 명찰출력 저장했습니다`);
+      toast.complete(`"${namecardBatchLabel(res.batch)}" 저장했습니다`);
       await refreshNamecardBatchList();
       namecardBatchSelect.value = String(res.batch.id);
       namecardBatchDeleteBtn.disabled = false;

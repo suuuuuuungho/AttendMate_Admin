@@ -125,13 +125,14 @@ export async function getAttendanceLog() {
  * 저장 시점의 이름/학년반을 그대로 얼려서(snapshot) 담아두므로, 나중에 회원 정보가
  * 바뀌어도 저장된 출력물은 항상 그때 그 내용으로 재현된다. */
 
-/** members: [{ 회원ID, 이름, 학년반 }, ...] — 채워진 슬롯 순서 그대로. */
-export async function saveNameCardBatch(members) {
+/** members: [{ 회원ID, 이름, 학년반 }, ...] — 채워진 슬롯 순서 그대로.
+ * name을 비워두면(null) 목록에서 "NNN 명찰출력" 자동 번호 이름으로 표시된다. */
+export async function saveNameCardBatch(members, name) {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/NameCardBatch`, {
       method: "POST",
       headers: returnRepresentation(),
-      body: JSON.stringify({ members }),
+      body: JSON.stringify({ members, name: name || null }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -147,7 +148,7 @@ export async function saveNameCardBatch(members) {
 
 export async function getNameCardBatches() {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/NameCardBatch?select=id,created_at,members&order=id.desc`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/NameCardBatch?select=id,created_at,name,members&order=id.desc`, {
       headers: headers(),
     });
     if (!res.ok) return { batches: [], available: false };
