@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=19";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=20";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -10,9 +10,13 @@ import {
   saveNameCardBatch,
   getNameCardBatches,
   deleteNameCardBatch,
-} from "./api.js?v=19";
-import { initAppSwitcher } from "./app-switcher.js?v=19";
-import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=19";
+  getNameCardTemplates,
+  createNameCardTemplate,
+  updateNameCardTemplate,
+  deleteNameCardTemplate,
+} from "./api.js?v=20";
+import { initAppSwitcher } from "./app-switcher.js?v=20";
+import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=20";
 
 initAppSwitcher();
 
@@ -323,20 +327,32 @@ memberModalSaveBtn.addEventListener("click", async () => {
 });
 
 /* ===================== NameCard 탭 =====================
- * 성회 명찰 메일머지 Template.hwp(A4, 2x4=8칸)를 그대로 웹에서 재현한다. 슬롯을 누르면
- * 검색창이 뜨고, 학생을 고르면 그 자리에 실제 명찰(제목/이름/학년반)이 채워진다.
+ * 명찰 "디자인"은 템플릿(NameCardTemplate)으로 따로 관리한다 — 템플릿을 고르고 칸을
+ * 누르면 그 템플릿 디자인 + 고른 학생 정보로 명찰 한 장이 만들어진다. 템플릿을 편집/복제해
+ * 여러 디자인을 만들어 쓸 수 있고, 실제로 학생을 채운 결과는 여전히 NameCardBatch로
+ * 저장한다 — 템플릿(빈 디자인)과 배치(채운 완성본 스냅샷)는 별개 개념이다.
+ *
  * "인쇄" 버튼은 브라우저 인쇄 대화상자를 열어 @media print 레이아웃(A4, 2x4)으로 출력한다.
- *
- * 8명이 넘는 명단(Member 탭에서 여러 명 선택해 생성하거나, 8명 넘게 저장된 출력을 불러올
- * 때)은 8칸씩 여러 장으로 나눠 인쇄한다 — namecardSlots 길이가 항상 8의 배수가 되도록
- * 유지하고, 그 길이에 맞춰 .namecard-sheet(한 장)를 필요한 만큼 만든다.
- *
- * "저장"은 지금 채워진 슬롯들을 NameCardBatch 테이블에 그 시점의 이름/학년반 그대로
- * 스냅샷으로 남긴다 — "NNN 명찰출력"으로 번호가 매겨지고, 나중에 회원 정보가 바뀌어도
- * 그 버전 그대로 다시 불러와 인쇄할 수 있다. */
-const NAMECARD_TITLE_LINE1 = "2026 중고등부 하계성회 [중등부]";
-const NAMECARD_TITLE_LINE2 = "오직 성령 안에서 무너지지 않는 믿음을 세워가라";
+ * 8명이 넘는 명단은 8칸씩 여러 장으로 나눠 인쇄한다 — namecardSlots 길이가 항상 8의
+ * 배수가 되도록 유지하고, 그 길이에 맞춰 .namecard-sheet(한 장)를 필요한 만큼 만든다. */
+const DEFAULT_TEMPLATE_NAME = "2026 중고등부 하계성회_일반반";
 const NAMECARD_SLOT_COUNT = 8;
+
+function defaultTemplateFields() {
+  return {
+    name: DEFAULT_TEMPLATE_NAME,
+    title1: "2026 중고등부 하계성회 [중등부]",
+    title2: "오직 성령 안에서 무너지지 않는 믿음을 세워가라",
+    division_suffix: "연세중앙",
+    background: "#ffffff",
+    style: {
+      title1: { justify: "center", color: "#1d1d1f" },
+      title2: { justify: "center", color: "#1d1d1f" },
+      name: { justify: "center", color: "#1d1d1f" },
+      division: { justify: "flex-start", color: "#1d1d1f" },
+    },
+  };
+}
 
 const namecardPagesEl = document.getElementById("namecardPages");
 const namecardPrintBtn = document.getElementById("namecardPrintBtn");
@@ -353,23 +369,71 @@ const namecardGenerateConfirmBtn = document.getElementById("namecardGenerateConf
 const namecardEditToolbar = document.getElementById("namecardEditToolbar");
 const namecardColorInput = document.getElementById("namecardColorInput");
 
+const namecardTemplateSelect = document.getElementById("namecardTemplateSelect");
+const namecardTemplateEditBtn = document.getElementById("namecardTemplateEditBtn");
+const namecardTemplateDuplicateBtn = document.getElementById("namecardTemplateDuplicateBtn");
+const namecardTemplateDeleteBtn = document.getElementById("namecardTemplateDeleteBtn");
+const namecardTemplateModal = document.getElementById("namecardTemplateModal");
+const namecardTemplateNameInput = document.getElementById("namecardTemplateNameInput");
+const namecardTemplatePreviewSlot = document.getElementById("namecardTemplatePreviewSlot");
+const namecardTemplateSuffixInput = document.getElementById("namecardTemplateSuffixInput");
+const namecardTemplateBgInput = document.getElementById("namecardTemplateBgInput");
+const namecardTemplateEditToolbar = document.getElementById("namecardTemplateEditToolbar");
+const namecardTemplateFieldColorInput = document.getElementById("namecardTemplateFieldColorInput");
+const namecardTemplateError = document.getElementById("namecardTemplateError");
+const namecardTemplateCancelBtn = document.getElementById("namecardTemplateCancelBtn");
+const namecardTemplateSaveBtn = document.getElementById("namecardTemplateSaveBtn");
+
 let namecardSlots = new Array(NAMECARD_SLOT_COUNT).fill(null); // index -> 명찰 항목 객체 | null, 항상 8의 배수 길이
 let namecardSearchingIndex = null; // 검색창이 열려 있는 슬롯 — 한 번에 하나만 연다
 let namecardBatches = []; // getNameCardBatches()로 불러온 저장된 출력 목록
 let namecardActiveEditable = null; // { index, field, el } — 지금 커서가 있는 편집 가능한 글자
 
-/** 검색/명단에서 고른 원본 회원(회원ID/이름/학년반)을 명찰 카드 데이터로 바꾼다.
- * title1/title2/name(이름)/division은 전부 나중에 직접 편집 가능한 텍스트고,
- * style은 필드별 정렬/색 오버라이드를 담는다. */
+let namecardTemplates = []; // getNameCardTemplates()로 불러온 템플릿 목록
+let activeTemplate = null; // 지금 선택된 템플릿 — 새 슬롯을 채울 때 이 디자인을 쓴다
+let editingTemplate = null; // 템플릿 편집 모달에서 수정 중인 작업 사본
+let templateActiveEditable = null; // { field, el } — 편집 모달 미리보기에서 지금 커서가 있는 글자
+let namecardTemplatesReadyPromise = null;
+
+function ensureNamecardTemplatesLoaded() {
+  if (!namecardTemplatesReadyPromise) namecardTemplatesReadyPromise = refreshNamecardTemplateList();
+  return namecardTemplatesReadyPromise;
+}
+
+/** 템플릿이 하나도 없으면(최초 1회) 기존 하드코딩 디자인을 기본 템플릿으로 만들어둔다. */
+async function refreshNamecardTemplateList(selectId) {
+  const { templates, available } = await getNameCardTemplates();
+  if (available && !templates.length) {
+    const res = await createNameCardTemplate(defaultTemplateFields());
+    if (res.success) templates.push(res.template);
+  }
+  namecardTemplates = templates;
+  namecardTemplateSelect.innerHTML = templates.map((t) => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join("");
+
+  const targetId = selectId != null ? String(selectId) : namecardTemplateSelect.value;
+  const match = templates.find((t) => String(t.id) === targetId) || templates[0] || null;
+  if (match) {
+    namecardTemplateSelect.value = String(match.id);
+    activeTemplate = match;
+  } else {
+    activeTemplate = null;
+  }
+}
+
+/** 검색/명단에서 고른 원본 회원(회원ID/이름/학년반)을 지금 선택된 템플릿 디자인으로 명찰
+ * 카드 데이터를 만든다. title1/title2/name(이름)/division은 전부 나중에 직접 편집
+ * 가능한 텍스트고, style은 필드별 정렬/색 오버라이드를 담는다. */
 function makeNamecardEntry(member) {
+  const t = activeTemplate || defaultTemplateFields();
   return {
     회원ID: member.회원ID,
     이름: member.이름,
     학년반: member.학년반 || "",
-    title1: NAMECARD_TITLE_LINE1,
-    title2: NAMECARD_TITLE_LINE2,
-    division: `${abbreviateClass(member.학년반) || member.학년반 || ""} 연세중앙`,
-    style: {},
+    title1: t.title1,
+    title2: t.title2,
+    division: `${abbreviateClass(member.학년반) || member.학년반 || ""} ${t.division_suffix || ""}`.trim(),
+    background: t.background || "#ffffff",
+    style: JSON.parse(JSON.stringify(t.style || {})),
   };
 }
 
@@ -493,7 +557,8 @@ function renderNamecardSlot(index) {
     addBtn.type = "button";
     addBtn.className = "namecard-slot__add";
     addBtn.textContent = "+";
-    addBtn.addEventListener("click", () => {
+    addBtn.addEventListener("click", async () => {
+      await ensureNamecardTemplatesLoaded();
       namecardSearchingIndex = index;
       renderNamecardSlot(index);
     });
@@ -515,6 +580,7 @@ function renderNamecardSlot(index) {
 
   const card = document.createElement("div");
   card.className = "namecard-card";
+  card.style.backgroundColor = member.background || "";
   card.innerHTML = `
     <div class="namecard-card__row namecard-card__row--spacer"></div>
     <div class="namecard-card__contentblock">
@@ -619,6 +685,7 @@ function closeNamecardGenerateModal() {
 
 function initNameCardTab() {
   renderNamecardPages();
+  ensureNamecardTemplatesLoaded();
   refreshNamecardBatchList();
 
   namecardPrintBtn.addEventListener("click", () => window.print());
@@ -677,6 +744,7 @@ function initNameCardTab() {
 
   namecardGenerateBtn.addEventListener("click", async () => {
     if (!membersLoaded) await initMemberTab();
+    await ensureNamecardTemplatesLoaded();
     buildNamecardGenerateGroups();
     namecardGenerateModal.style.display = "flex";
   });
@@ -722,6 +790,165 @@ function initNameCardTab() {
     const entry = namecardSlots[index];
     entry.style[field] = { ...entry.style[field], color };
   });
+
+  /* ===== 템플릿 선택/복제/삭제 ===== */
+  namecardTemplateSelect.addEventListener("change", () => {
+    const t = namecardTemplates.find((x) => String(x.id) === namecardTemplateSelect.value);
+    if (t) activeTemplate = t;
+  });
+
+  namecardTemplateEditBtn.addEventListener("click", async () => {
+    await ensureNamecardTemplatesLoaded();
+    if (!activeTemplate) return;
+    openTemplateEditor(activeTemplate);
+  });
+
+  namecardTemplateDuplicateBtn.addEventListener("click", async () => {
+    if (!activeTemplate) return;
+    const name = prompt("새 템플릿 이름을 입력하세요.", `${activeTemplate.name} 복사본`);
+    if (!name || !name.trim()) return;
+    const toast = showToast("복제 중입니다...");
+    const { id, created_at, ...fields } = activeTemplate;
+    const res = await createNameCardTemplate({ ...fields, name: name.trim() });
+    if (res.success) {
+      toast.complete("템플릿을 복제했습니다");
+      await refreshNamecardTemplateList(res.template.id);
+    } else {
+      toast.fail(res.error || "복제에 실패했습니다.");
+    }
+  });
+
+  namecardTemplateDeleteBtn.addEventListener("click", async () => {
+    if (!activeTemplate) return;
+    if (namecardTemplates.length <= 1) {
+      alert("템플릿이 최소 1개는 있어야 합니다. 먼저 다른 템플릿을 복제해서 만들어주세요.");
+      return;
+    }
+    if (!confirm(`"${activeTemplate.name}" 템플릿을 삭제할까요? 되돌릴 수 없습니다.`)) return;
+    const toast = showToast("삭제 중입니다...");
+    const res = await deleteNameCardTemplate(activeTemplate.id);
+    if (res.success) {
+      toast.complete("삭제했습니다");
+      await refreshNamecardTemplateList();
+    } else {
+      toast.fail(res.error || "삭제에 실패했습니다.");
+    }
+  });
+
+  /* ===== 템플릿 편집 모달 ===== */
+  namecardTemplateNameInput.addEventListener("input", () => {
+    if (editingTemplate) editingTemplate.name = namecardTemplateNameInput.value;
+  });
+  namecardTemplateSuffixInput.addEventListener("input", () => {
+    if (!editingTemplate) return;
+    editingTemplate.division_suffix = namecardTemplateSuffixInput.value;
+    const divEl = namecardTemplatePreviewSlot.querySelector('[data-field="division"]');
+    if (divEl) divEl.textContent = `1-1반 ${editingTemplate.division_suffix}`;
+  });
+  namecardTemplateBgInput.addEventListener("input", () => {
+    if (!editingTemplate) return;
+    editingTemplate.background = namecardTemplateBgInput.value;
+    const card = namecardTemplatePreviewSlot.querySelector(".namecard-card");
+    if (card) card.style.backgroundColor = editingTemplate.background;
+  });
+  namecardTemplateEditToolbar.querySelectorAll(".namecard-edit-toolbar__btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!templateActiveEditable) return;
+      const { field, el } = templateActiveEditable;
+      const align = btn.dataset.align;
+      const justify = align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center";
+      el.style.justifyContent = justify;
+      editingTemplate.style[field] = { ...editingTemplate.style[field], justify };
+    });
+  });
+  namecardTemplateFieldColorInput.addEventListener("input", () => {
+    if (!templateActiveEditable) return;
+    const { field, el } = templateActiveEditable;
+    const color = namecardTemplateFieldColorInput.value;
+    el.style.color = color;
+    editingTemplate.style[field] = { ...editingTemplate.style[field], color };
+  });
+  namecardTemplateCancelBtn.addEventListener("click", closeTemplateEditor);
+  namecardTemplateSaveBtn.addEventListener("click", async () => {
+    if (!editingTemplate.name.trim()) {
+      namecardTemplateError.textContent = "템플릿 이름을 입력해주세요.";
+      namecardTemplateError.style.display = "block";
+      return;
+    }
+    const toast = showToast("저장 중입니다...");
+    const { id, created_at, ...fields } = editingTemplate;
+    const res = await updateNameCardTemplate(id, fields);
+    if (res.success) {
+      toast.complete("템플릿을 저장했습니다");
+      closeTemplateEditor();
+      await refreshNamecardTemplateList(id);
+    } else {
+      toast.fail(res.error || "저장에 실패했습니다.");
+    }
+  });
+}
+
+/** 템플릿 편집 모달을 연다 — 원본을 건드리지 않도록 작업 사본을 만든다. */
+function openTemplateEditor(template) {
+  editingTemplate = JSON.parse(JSON.stringify(template));
+  templateActiveEditable = null;
+  namecardTemplateNameInput.value = editingTemplate.name;
+  namecardTemplateSuffixInput.value = editingTemplate.division_suffix || "";
+  namecardTemplateBgInput.value = editingTemplate.background || "#ffffff";
+  namecardTemplateError.style.display = "none";
+  renderTemplatePreview();
+  namecardTemplateModal.style.display = "flex";
+}
+
+function closeTemplateEditor() {
+  namecardTemplateModal.style.display = "none";
+  editingTemplate = null;
+  templateActiveEditable = null;
+}
+
+/** 편집 모달의 미리보기 카드를 그린다 — 실제 슬롯 카드와 같은 구조지만 이름/학년반은
+ * 예시 텍스트("홍길동"/"1-1반")이고, 제목 두 줄만 내용까지 직접 편집 가능하다. */
+function renderTemplatePreview() {
+  namecardTemplatePreviewSlot.innerHTML = "";
+  const card = document.createElement("div");
+  card.className = "namecard-card";
+  card.style.backgroundColor = editingTemplate.background || "";
+  card.innerHTML = `
+    <div class="namecard-card__row namecard-card__row--spacer"></div>
+    <div class="namecard-card__contentblock">
+      <div class="namecard-card__title">
+        <div class="namecard-card__title-line1" contenteditable="true" spellcheck="false" data-field="title1">${escapeHtml(editingTemplate.title1)}</div>
+        <div class="namecard-card__title-line2" contenteditable="true" spellcheck="false" data-field="title2">${escapeHtml(editingTemplate.title2)}</div>
+      </div>
+      <div class="namecard-card__name" data-field="name">홍길동</div>
+      <div class="namecard-card__division" data-field="division">1-1반 ${escapeHtml(editingTemplate.division_suffix || "")}</div>
+    </div>
+    <div class="namecard-card__row namecard-card__row--spacer"></div>
+  `;
+
+  const fieldMap = {
+    title1: card.querySelector('[data-field="title1"]'),
+    title2: card.querySelector('[data-field="title2"]'),
+    name: card.querySelector('[data-field="name"]'),
+    division: card.querySelector('[data-field="division"]'),
+  };
+  for (const [field, el] of Object.entries(fieldMap)) {
+    const st = editingTemplate.style[field] || {};
+    if (st.justify) el.style.justifyContent = st.justify;
+    if (st.color) el.style.color = st.color;
+    el.tabIndex = 0;
+    el.addEventListener("focus", () => {
+      templateActiveEditable = { field, el };
+      namecardTemplateFieldColorInput.value = rgbToHex(getComputedStyle(el).color);
+    });
+    if (field === "title1" || field === "title2") {
+      el.addEventListener("input", () => {
+        editingTemplate[field] = el.textContent;
+      });
+    }
+  }
+
+  namecardTemplatePreviewSlot.appendChild(card);
 }
 
 /* ===================== Control Panel 탭 ===================== */

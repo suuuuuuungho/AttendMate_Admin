@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>관리자 — AttendMate_Admin</title>
 <meta name="description" content="AttendMate 회원/네임카드/타임 제어 관리자 페이지">
-<link rel="stylesheet" href="assets/css/tokens.css?v=19">
-<link rel="stylesheet" href="assets/css/base.css?v=19">
-<link rel="stylesheet" href="assets/css/components.css?v=19">
-<link rel="stylesheet" href="assets/css/admin.css?v=19">
+<link rel="stylesheet" href="assets/css/tokens.css?v=20">
+<link rel="stylesheet" href="assets/css/base.css?v=20">
+<link rel="stylesheet" href="assets/css/components.css?v=20">
+<link rel="stylesheet" href="assets/css/admin.css?v=20">
 </head>
 <body>
 
@@ -94,6 +94,13 @@
     <!-- ===== NameCard 탭 ===== -->
     <section id="tab-namecard" class="admin-panel" style="display:none;">
       <div class="admin-toolbar" style="top: 96px; flex-wrap: wrap;">
+        <span class="text-caption" style="color: var(--color-ink-muted-48);">템플릿을 고른 뒤, 칸을 눌러 학생을 채우세요.</span>
+        <select id="namecardTemplateSelect" class="search-input namecard-batch-select" style="margin-left:auto;"></select>
+        <button id="namecardTemplateEditBtn" type="button" class="btn-secondary-pill">템플릿 편집</button>
+        <button id="namecardTemplateDuplicateBtn" type="button" class="btn-secondary-pill">템플릿 복제</button>
+        <button id="namecardTemplateDeleteBtn" type="button" class="btn-secondary-pill">템플릿 삭제</button>
+      </div>
+      <div class="admin-toolbar" style="top: calc(96px + 52px); flex-wrap: wrap;">
         <span class="text-caption" style="color: var(--color-ink-muted-48);">칸을 눌러 학생을 검색하거나, 파일 생성으로 반/학년 전체를 채우세요.</span>
         <select id="namecardBatchSelect" class="search-input namecard-batch-select" style="margin-left:auto;">
           <option value="">저장된 파일 불러오기</option>
@@ -187,6 +194,47 @@
   </div>
 </div>
 
-<script type="module" src="assets/js/admin.js?v=19"></script>
+<div id="namecardTemplateModal" class="modal-overlay" style="display:none">
+  <div class="modal-panel namecard-template-modal">
+    <h3 class="text-body-strong on-light">템플릿 편집</h3>
+    <input id="namecardTemplateNameInput" class="search-input" style="width:100%;" type="text" placeholder="템플릿 이름">
+
+    <div class="namecard-template-editor">
+      <div id="namecardTemplatePreviewSlot" class="namecard-slot namecard-template-editor__preview"></div>
+      <div class="namecard-template-editor__controls">
+        <label class="text-caption namecard-template-editor__field">
+          제목 첫 줄, 둘째 줄은 카드에서 직접 클릭해 고치세요.
+        </label>
+        <label class="text-caption namecard-template-editor__field">
+          학년반 뒤에 붙는 문구
+          <input id="namecardTemplateSuffixInput" class="search-input" type="text" placeholder="예: 연세중앙">
+        </label>
+        <label class="text-caption namecard-template-editor__field">
+          카드 배경색
+          <input id="namecardTemplateBgInput" type="color" value="#ffffff">
+        </label>
+      </div>
+    </div>
+
+    <div id="namecardTemplateEditToolbar" class="namecard-edit-toolbar">
+      <span class="text-caption" style="color: var(--color-ink-muted-48);">선택한 글자:</span>
+      <button type="button" class="namecard-edit-toolbar__btn" data-align="left" title="왼쪽 정렬">왼쪽</button>
+      <button type="button" class="namecard-edit-toolbar__btn" data-align="center" title="가운데 정렬">가운데</button>
+      <button type="button" class="namecard-edit-toolbar__btn" data-align="right" title="오른쪽 정렬">오른쪽</button>
+      <label class="namecard-edit-toolbar__color">
+        글자색
+        <input id="namecardTemplateFieldColorInput" type="color" value="#1d1d1f">
+      </label>
+    </div>
+
+    <div id="namecardTemplateError" class="password-gate__error text-caption" style="display:none;"></div>
+    <div style="display:flex; gap:8px; justify-content:flex-end;">
+      <button id="namecardTemplateCancelBtn" class="btn-secondary-pill">취소</button>
+      <button id="namecardTemplateSaveBtn" class="btn-primary">저장</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="assets/js/admin.js?v=20"></script>
 </body>
 </html>

@@ -174,6 +174,76 @@ export async function deleteNameCardBatch(id) {
   }
 }
 
+/* ===================== 명찰 템플릿 (NameCard) =====================
+ * 배치(NameCardBatch)와 별개 — 템플릿은 "빈 명찰의 디자인"(제목 텍스트/학년반 접미사/
+ * 배경색/필드별 정렬·색)만 담는다. 학생을 채운 결과는 여전히 배치로 저장된다. */
+
+export async function getNameCardTemplates() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/NameCardTemplate?select=*&order=id.asc`, { headers: headers() });
+    if (!res.ok) return { templates: [], available: false };
+    const data = await res.json();
+    return { templates: data, available: true };
+  } catch (e) {
+    return { templates: [], available: false };
+  }
+}
+
+/** template: { name, title1, title2, division_suffix, background, style } */
+export async function createNameCardTemplate(template) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/NameCardTemplate`, {
+      method: "POST",
+      headers: returnRepresentation(),
+      body: JSON.stringify(template),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { success: false, error: data.message || "템플릿 생성에 실패했습니다" };
+    }
+    const data = await res.json();
+    if (!data || !data.length) return { success: false, error: "생성 결과를 확인할 수 없습니다" };
+    return { success: true, template: data[0] };
+  } catch (e) {
+    return { success: false, error: "네트워크 오류: " + e.message };
+  }
+}
+
+export async function updateNameCardTemplate(id, template) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/NameCardTemplate?id=eq.${Number(id)}`, {
+      method: "PATCH",
+      headers: returnRepresentation(),
+      body: JSON.stringify(template),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { success: false, error: data.message || "템플릿 수정에 실패했습니다" };
+    }
+    const data = await res.json();
+    if (!data || !data.length) return { success: false, error: "템플릿을 찾을 수 없습니다" };
+    return { success: true, template: data[0] };
+  } catch (e) {
+    return { success: false, error: "네트워크 오류: " + e.message };
+  }
+}
+
+export async function deleteNameCardTemplate(id) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/NameCardTemplate?id=eq.${Number(id)}`, {
+      method: "DELETE",
+      headers: headers(),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { success: false, error: data.message || "삭제에 실패했습니다" };
+    }
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: "네트워크 오류: " + e.message };
+  }
+}
+
 /* ===================== 타임 제어 (Control Panel) ===================== */
 
 /**

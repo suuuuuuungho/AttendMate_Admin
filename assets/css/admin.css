@@ -401,6 +401,45 @@
   cursor: pointer;
 }
 
+/* 템플릿 편집 모달 — 왼쪽 미리보기 카드(실제 슬롯과 같은 비율) + 오른쪽 입력 컨트롤. */
+.namecard-template-modal { max-width: 640px; }
+.namecard-template-editor {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.namecard-template-editor__preview {
+  flex: 1 1 260px;
+  aspect-ratio: 105 / 74.25;
+  max-width: 340px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 20px -14px rgba(0, 0, 0, 0.35);
+}
+.namecard-template-editor__controls {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.namecard-template-editor__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--color-ink-muted-48);
+}
+.namecard-template-editor__field input[type="text"] { width: 100%; }
+.namecard-template-editor__field input[type="color"] {
+  width: 40px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+}
+
 @media print {
   body * { visibility: hidden; }
   #tab-namecard, #tab-namecard * { visibility: visible; }
