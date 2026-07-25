@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=17";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=18";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -9,9 +9,9 @@ import {
   getAttendanceLog,
   saveNameCardBatch,
   getNameCardBatches,
-} from "./api.js?v=17";
-import { initAppSwitcher } from "./app-switcher.js?v=17";
-import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=17";
+} from "./api.js?v=18";
+import { initAppSwitcher } from "./app-switcher.js?v=18";
+import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=18";
 
 initAppSwitcher();
 
@@ -124,15 +124,6 @@ const memberPagination = document.getElementById("memberPagination");
 const memberPrevPageBtn = document.getElementById("memberPrevPageBtn");
 const memberNextPageBtn = document.getElementById("memberNextPageBtn");
 const memberPageInfo = document.getElementById("memberPageInfo");
-const memberSelectAllBtn = document.getElementById("memberSelectAllBtn");
-const memberSelectionBar = document.getElementById("memberSelectionBar");
-const memberSelectionCount = document.getElementById("memberSelectionCount");
-const memberSelectionClearBtn = document.getElementById("memberSelectionClearBtn");
-const memberSelectionNameCardBtn = document.getElementById("memberSelectionNameCardBtn");
-
-/* 학년/반 단위 선택은 검색창에 학년반을 입력해 필터링한 뒤 "검색결과 전체 선택"을
- * 누르는 것으로 처리한다 — 별도 학년/반 선택 UI 없이 기존 검색을 그대로 재사용. */
-const selectedMemberIds = new Set();
 
 const memberModal = document.getElementById("memberModal");
 const memberModalTitle = document.getElementById("memberModalTitle");
@@ -212,28 +203,6 @@ async function initMemberTab() {
     currentPage++;
     renderMemberPage();
   });
-
-  memberSelectAllBtn.addEventListener("click", () => {
-    for (const m of currentFiltered) selectedMemberIds.add(m.회원ID);
-    renderMemberPage();
-    updateMemberSelectionBar();
-  });
-  memberSelectionClearBtn.addEventListener("click", () => {
-    selectedMemberIds.clear();
-    renderMemberPage();
-    updateMemberSelectionBar();
-  });
-  memberSelectionNameCardBtn.addEventListener("click", () => {
-    const selected = allMembers
-      .filter((m) => selectedMemberIds.has(m.회원ID))
-      .sort((a, b) => (a.학년반 || "").localeCompare(b.학년반 || "", "ko", { numeric: true }) || a.이름.localeCompare(b.이름, "ko"));
-    if (!selected.length) return;
-    selectedMemberIds.clear();
-    renderMemberPage();
-    updateMemberSelectionBar();
-    document.querySelector('.admin-tab[data-tab="namecard"]').click();
-    loadNameCardMembers(selected);
-  });
 }
 
 /** 실제 명단에 있는 학년반 값들로 드롭다운을 채운다 — 오타/자유입력을 막는다. */
@@ -249,30 +218,11 @@ memberPhoneInput.addEventListener("input", () => {
   memberPhoneInput.value = memberPhoneInput.value.replace(/\D/g, "").slice(0, 11);
 });
 
-function updateMemberSelectionBar() {
-  const n = selectedMemberIds.size;
-  memberSelectionBar.style.display = n ? "flex" : "none";
-  memberSelectionCount.textContent = `${n}명 선택됨`;
-}
-
 function renderMemberTable(members) {
   memberTableBody.innerHTML = "";
   memberEmptyEl.style.display = members.length ? "none" : "block";
   for (const m of members) {
     const tr = document.createElement("tr");
-
-    const checkTd = document.createElement("td");
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.className = "member-table__checkbox";
-    checkbox.checked = selectedMemberIds.has(m.회원ID);
-    checkbox.addEventListener("change", () => {
-      if (checkbox.checked) selectedMemberIds.add(m.회원ID);
-      else selectedMemberIds.delete(m.회원ID);
-      updateMemberSelectionBar();
-    });
-    checkTd.appendChild(checkbox);
-    tr.appendChild(checkTd);
 
     const cells = [m.회원ID, m.이름, m.학년반 || "", m.전화 || ""];
     for (const c of cells) {
@@ -390,11 +340,36 @@ const NAMECARD_SLOT_COUNT = 8;
 const namecardPagesEl = document.getElementById("namecardPages");
 const namecardPrintBtn = document.getElementById("namecardPrintBtn");
 const namecardSaveBtn = document.getElementById("namecardSaveBtn");
+const namecardResetBtn = document.getElementById("namecardResetBtn");
 const namecardBatchSelect = document.getElementById("namecardBatchSelect");
+const namecardGenerateBtn = document.getElementById("namecardGenerateBtn");
+const namecardGenerateModal = document.getElementById("namecardGenerateModal");
+const namecardGenerateGroupsEl = document.getElementById("namecardGenerateGroups");
+const namecardGenerateErrorEl = document.getElementById("namecardGenerateError");
+const namecardGenerateCancelBtn = document.getElementById("namecardGenerateCancelBtn");
+const namecardGenerateConfirmBtn = document.getElementById("namecardGenerateConfirmBtn");
+const namecardEditToolbar = document.getElementById("namecardEditToolbar");
+const namecardColorInput = document.getElementById("namecardColorInput");
 
-let namecardSlots = new Array(NAMECARD_SLOT_COUNT).fill(null); // index -> 회원 객체 | null, 항상 8의 배수 길이
+let namecardSlots = new Array(NAMECARD_SLOT_COUNT).fill(null); // index -> 명찰 항목 객체 | null, 항상 8의 배수 길이
 let namecardSearchingIndex = null; // 검색창이 열려 있는 슬롯 — 한 번에 하나만 연다
 let namecardBatches = []; // getNameCardBatches()로 불러온 저장된 출력 목록
+let namecardActiveEditable = null; // { index, field, el } — 지금 커서가 있는 편집 가능한 글자
+
+/** 검색/명단에서 고른 원본 회원(회원ID/이름/학년반)을 명찰 카드 데이터로 바꾼다.
+ * title1/title2/name(이름)/division은 전부 나중에 직접 편집 가능한 텍스트고,
+ * style은 필드별 정렬/색 오버라이드를 담는다. */
+function makeNamecardEntry(member) {
+  return {
+    회원ID: member.회원ID,
+    이름: member.이름,
+    학년반: member.학년반 || "",
+    title1: NAMECARD_TITLE_LINE1,
+    title2: NAMECARD_TITLE_LINE2,
+    division: `${abbreviateClass(member.학년반) || member.학년반 || ""} 연세중앙`,
+    style: {},
+  };
+}
 
 /** 명단 길이에 맞춰 페이지(.namecard-sheet, 8칸씩) DOM을 다시 만들고 각 슬롯을 그린다. */
 function renderNamecardPages() {
@@ -415,13 +390,32 @@ function renderNamecardPages() {
     namecardPagesEl.appendChild(sheet);
   }
   for (let i = 0; i < namecardSlots.length; i++) renderNamecardSlot(i);
+
+  namecardActiveEditable = null;
+  namecardEditToolbar.style.display = namecardSlots.some(Boolean) ? "flex" : "none";
 }
 
-/** Member 탭에서 선택한 학생들, 또는 저장된 출력을 불러와 슬롯에 채운다. */
-function loadNameCardMembers(members) {
-  namecardSlots = members.slice();
+/** 파일 생성 모달 확인, 또는 저장된 출력 불러오기에서 슬롯을 채운다. */
+function loadNameCardMembers(entries) {
+  namecardSlots = entries.slice();
   namecardSearchingIndex = null;
   renderNamecardPages();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+function rgbToHex(rgb) {
+  const m = rgb.match(/\d+/g);
+  if (!m) return "#1d1d1f";
+  return (
+    "#" +
+    m
+      .slice(0, 3)
+      .map((n) => Number(n).toString(16).padStart(2, "0"))
+      .join("")
+  );
 }
 
 async function refreshNamecardBatchList() {
@@ -475,9 +469,10 @@ function renderNamecardSlot(index) {
         metaSpan.textContent = abbreviateClass(m.학년반) || m.학년반 || "";
         row.append(nameSpan, metaSpan);
         row.addEventListener("click", () => {
-          namecardSlots[index] = m;
+          namecardSlots[index] = makeNamecardEntry(m);
           namecardSearchingIndex = null;
           renderNamecardSlot(index);
+          namecardEditToolbar.style.display = "flex";
         });
         results.appendChild(row);
       }
@@ -521,16 +516,102 @@ function renderNamecardSlot(index) {
     <div class="namecard-card__row namecard-card__row--spacer"></div>
     <div class="namecard-card__contentblock">
       <div class="namecard-card__title">
-        <div class="namecard-card__title-line1">${NAMECARD_TITLE_LINE1}</div>
-        <div class="namecard-card__title-line2">${NAMECARD_TITLE_LINE2}</div>
+        <div class="namecard-card__title-line1" contenteditable="true" spellcheck="false" data-field="title1">${escapeHtml(member.title1)}</div>
+        <div class="namecard-card__title-line2" contenteditable="true" spellcheck="false" data-field="title2">${escapeHtml(member.title2)}</div>
       </div>
-      <div class="namecard-card__name">${member.이름}</div>
-      <div class="namecard-card__division">${(abbreviateClass(member.학년반) || member.학년반 || "")} 연세중앙</div>
+      <div class="namecard-card__name" contenteditable="true" spellcheck="false" data-field="name">${escapeHtml(member.이름)}</div>
+      <div class="namecard-card__division" contenteditable="true" spellcheck="false" data-field="division">${escapeHtml(member.division)}</div>
     </div>
     <div class="namecard-card__row namecard-card__row--spacer"></div>
   `;
 
+  const fieldMap = {
+    title1: card.querySelector('[data-field="title1"]'),
+    title2: card.querySelector('[data-field="title2"]'),
+    name: card.querySelector('[data-field="name"]'),
+    division: card.querySelector('[data-field="division"]'),
+  };
+  for (const [field, el] of Object.entries(fieldMap)) {
+    const st = member.style[field];
+    if (st?.justify) el.style.justifyContent = st.justify;
+    if (st?.color) el.style.color = st.color;
+    el.addEventListener("focus", () => {
+      namecardActiveEditable = { index, field, el };
+      namecardColorInput.value = rgbToHex(getComputedStyle(el).color);
+    });
+    el.addEventListener("input", () => {
+      if (field === "name") member.이름 = el.textContent;
+      else member[field] = el.textContent;
+    });
+  }
+
   slotEl.append(clearBtn, card);
+}
+
+/** 학년/반 체크박스 목록을 다시 그린다 — 학년 체크박스는 그 학년의 모든 반을 한 번에 켜고 끈다. */
+function buildNamecardGenerateGroups() {
+  const groups = [...GRADE_GROUPS, { key: "other", label: "기타" }];
+  namecardGenerateGroupsEl.innerHTML = "";
+
+  for (const group of groups) {
+    const gradeMembers = allMembers.filter((m) => (getGradeGroup(m.학년반)?.key || "other") === group.key);
+    if (!gradeMembers.length) continue;
+
+    const byClass = new Map();
+    for (const m of gradeMembers) {
+      const classKey = abbreviateClass(m.학년반) || "미분류";
+      if (!byClass.has(classKey)) byClass.set(classKey, []);
+      byClass.get(classKey).push(m);
+    }
+    const classKeys = [...byClass.keys()].sort((a, b) => a.localeCompare(b, "ko", { numeric: true }));
+
+    const section = document.createElement("div");
+    section.className = "namecard-generate-group";
+
+    const gradeRow = document.createElement("label");
+    gradeRow.className = "namecard-generate-group__grade";
+    const gradeCheckbox = document.createElement("input");
+    gradeCheckbox.type = "checkbox";
+    const gradeLabelSpan = document.createElement("span");
+    gradeLabelSpan.textContent = `${group.label} (${gradeMembers.length}명)`;
+    gradeRow.append(gradeCheckbox, gradeLabelSpan);
+    section.appendChild(gradeRow);
+
+    const classList = document.createElement("div");
+    classList.className = "namecard-generate-group__classes";
+    const classCheckboxes = [];
+    for (const classKey of classKeys) {
+      const classMembers = byClass.get(classKey);
+      const classRow = document.createElement("label");
+      classRow.className = "namecard-generate-group__class";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.dataset.gradeKey = group.key;
+      cb.dataset.classKey = classKey;
+      const span = document.createElement("span");
+      span.textContent = `${classKey} (${classMembers.length}명)`;
+      classRow.append(cb, span);
+      classList.appendChild(classRow);
+      classCheckboxes.push(cb);
+    }
+    section.appendChild(classList);
+
+    gradeCheckbox.addEventListener("change", () => {
+      for (const cb of classCheckboxes) cb.checked = gradeCheckbox.checked;
+    });
+    classCheckboxes.forEach((cb) =>
+      cb.addEventListener("change", () => {
+        gradeCheckbox.checked = classCheckboxes.every((c) => c.checked);
+      })
+    );
+
+    namecardGenerateGroupsEl.appendChild(section);
+  }
+}
+
+function closeNamecardGenerateModal() {
+  namecardGenerateModal.style.display = "none";
+  namecardGenerateErrorEl.style.display = "none";
 }
 
 function initNameCardTab() {
@@ -539,8 +620,15 @@ function initNameCardTab() {
 
   namecardPrintBtn.addEventListener("click", () => window.print());
 
+  namecardResetBtn.addEventListener("click", () => {
+    if (namecardSlots.some(Boolean) && !confirm("현재 명찰을 모두 지울까요?")) return;
+    namecardSlots = new Array(NAMECARD_SLOT_COUNT).fill(null);
+    namecardSearchingIndex = null;
+    renderNamecardPages();
+  });
+
   namecardSaveBtn.addEventListener("click", async () => {
-    const filled = namecardSlots.filter(Boolean).map((m) => ({ 회원ID: m.회원ID, 이름: m.이름, 학년반: m.학년반 || "" }));
+    const filled = namecardSlots.filter(Boolean);
     if (!filled.length) {
       showToast("저장 중입니다...").fail("채워진 명찰이 없습니다.");
       return;
@@ -562,9 +650,57 @@ function initNameCardTab() {
     if (!id) return;
     const batch = namecardBatches.find((b) => String(b.id) === id);
     if (!batch) return;
-    namecardSlots = batch.members.map((m) => ({ 회원ID: String(m.회원ID), 이름: m.이름, 학년반: m.학년반 || "" }));
+    namecardSlots = batch.members.map((m) => (m.title1 !== undefined ? { ...m, style: m.style || {} } : makeNamecardEntry(m)));
     namecardSearchingIndex = null;
     renderNamecardPages();
+  });
+
+  namecardGenerateBtn.addEventListener("click", async () => {
+    if (!membersLoaded) await initMemberTab();
+    buildNamecardGenerateGroups();
+    namecardGenerateModal.style.display = "flex";
+  });
+  namecardGenerateCancelBtn.addEventListener("click", closeNamecardGenerateModal);
+  namecardGenerateConfirmBtn.addEventListener("click", () => {
+    const checked = [...namecardGenerateGroupsEl.querySelectorAll(".namecard-generate-group__classes input:checked")];
+    if (!checked.length) {
+      namecardGenerateErrorEl.textContent = "학년 또는 반을 하나 이상 선택해주세요.";
+      namecardGenerateErrorEl.style.display = "block";
+      return;
+    }
+    const selectedSet = new Set(checked.map((cb) => `${cb.dataset.gradeKey}::${cb.dataset.classKey}`));
+    const selected = allMembers
+      .filter((m) => {
+        const gradeKey = getGradeGroup(m.학년반)?.key || "other";
+        const classKey = abbreviateClass(m.학년반) || "미분류";
+        return selectedSet.has(`${gradeKey}::${classKey}`);
+      })
+      .sort(
+        (a, b) =>
+          (a.학년반 || "").localeCompare(b.학년반 || "", "ko", { numeric: true }) || a.이름.localeCompare(b.이름, "ko")
+      );
+    closeNamecardGenerateModal();
+    loadNameCardMembers(selected.map(makeNamecardEntry));
+  });
+
+  namecardEditToolbar.querySelectorAll(".namecard-edit-toolbar__btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!namecardActiveEditable) return;
+      const { index, field, el } = namecardActiveEditable;
+      const align = btn.dataset.align;
+      const justify = align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center";
+      el.style.justifyContent = justify;
+      const entry = namecardSlots[index];
+      entry.style[field] = { ...entry.style[field], justify };
+    });
+  });
+  namecardColorInput.addEventListener("input", () => {
+    if (!namecardActiveEditable) return;
+    const { index, field, el } = namecardActiveEditable;
+    const color = namecardColorInput.value;
+    el.style.color = color;
+    const entry = namecardSlots[index];
+    entry.style[field] = { ...entry.style[field], color };
   });
 }
 

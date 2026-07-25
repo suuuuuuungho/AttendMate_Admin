@@ -127,27 +127,19 @@
   color: var(--color-primary);
   font-weight: 600;
 }
-.member-table__checkbox {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--color-primary);
-}
-
-/* 체크박스로 선택한 학생 수 + 명찰 생성 진입점 — 하나라도 선택되면 나타난다. */
-.member-selection-bar {
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) 0;
-  border-bottom: 1px solid var(--color-divider-soft);
-  margin-bottom: var(--space-sm);
-}
-.member-selection-bar > :last-child { margin-left: auto; }
 
 /* ===================== NameCard 탭 =====================
    성회 명찰 메일머지 Template.hwp를 그대로 재현 — A4 세로, 2열x4행=8칸.
    화면에서는 A4 비율(210:297)을 유지한 채 축소해서 보여주고, 인쇄 시에는
    실제 A4 크기(mm)로 고정한다. 8명이 넘으면 .namecard-sheet(한 장)가 여러 개
    생기고, 인쇄 시 장마다 페이지를 나눈다. */
+.namecard-batch-select {
+  width: auto;
+  height: 36px;
+  padding: 0 var(--space-sm);
+  font-size: var(--type-caption-size);
+}
+
 .namecard-pages {
   display: flex;
   flex-direction: column;
@@ -161,7 +153,11 @@
   background: var(--color-hairline);
   border: 1px solid var(--color-hairline);
   aspect-ratio: 210 / 297;
-  max-width: 640px;
+  /* max-width만으로는 flex 자식이 aspect-ratio와 상호작용하며 내용 크기로만
+     쪼그라드는 버그가 있어서, width를 명시적으로 줘서 항상 정확히 640px(또는
+     화면이 더 좁으면 100%)로 뜨게 고정한다. */
+  width: min(640px, 100%);
+  align-self: center;
   margin: 0 auto;
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -331,6 +327,80 @@
   font-size: clamp(13px, 3.17vw, 23px);
 }
 
+/* 이름/학년반/제목 텍스트는 전부 contenteditable — 클릭해서 바로 내용을 고칠 수 있다.
+   포커스가 가면 옅은 파란 테두리로 "지금 편집 중"임을 표시한다. */
+[contenteditable="true"] { cursor: text; outline: none; border-radius: 2px; }
+[contenteditable="true"]:focus { outline: 2px solid var(--color-primary-focus); outline-offset: 1px; }
+
+/* 정렬/색 편집 도구 — 명찰이 하나라도 채워지면 나타나고, 글자를 클릭하면 그 글자 기준으로 동작한다. */
+.namecard-edit-toolbar {
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0 var(--space-sm);
+  flex-wrap: wrap;
+}
+.namecard-edit-toolbar__btn {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-hairline);
+  font-size: var(--type-caption-size);
+  color: var(--color-ink);
+  background: var(--color-canvas);
+}
+.namecard-edit-toolbar__btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.namecard-edit-toolbar__color {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--type-caption-size);
+  color: var(--color-ink-muted-48);
+}
+.namecard-edit-toolbar__color input[type="color"] {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+}
+
+/* 파일 생성 모달 — 학년별 섹션 + 그 안에 반 체크박스 목록. */
+.namecard-generate-groups {
+  max-height: 50vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.namecard-generate-group {
+  border: 1px solid var(--color-divider-soft);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+}
+.namecard-generate-group__grade {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.namecard-generate-group__classes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 6px;
+  margin-top: var(--space-xs);
+  padding-left: 24px;
+}
+.namecard-generate-group__class {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--type-caption-size);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
 @media print {
   body * { visibility: hidden; }
   #tab-namecard, #tab-namecard * { visibility: visible; }
@@ -342,12 +412,14 @@
     width: 100%;
   }
   #tab-namecard .admin-toolbar,
+  #namecardEditToolbar,
   .namecard-slot__add,
   .namecard-slot__clear,
   .namecard-slot__search-input,
   .namecard-slot__results {
     display: none !important;
   }
+  [contenteditable="true"] { outline: none !important; }
   @page { size: A4; margin: 0; }
   .namecard-pages { gap: 0; }
   .namecard-sheet {
