@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=16";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=17";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -7,9 +7,11 @@ import {
   getTimeControls,
   setTimeControl,
   getAttendanceLog,
-} from "./api.js?v=16";
-import { initAppSwitcher } from "./app-switcher.js?v=16";
-import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=16";
+  saveNameCardBatch,
+  getNameCardBatches,
+} from "./api.js?v=17";
+import { initAppSwitcher } from "./app-switcher.js?v=17";
+import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=17";
 
 initAppSwitcher();
 
@@ -122,6 +124,15 @@ const memberPagination = document.getElementById("memberPagination");
 const memberPrevPageBtn = document.getElementById("memberPrevPageBtn");
 const memberNextPageBtn = document.getElementById("memberNextPageBtn");
 const memberPageInfo = document.getElementById("memberPageInfo");
+const memberSelectAllBtn = document.getElementById("memberSelectAllBtn");
+const memberSelectionBar = document.getElementById("memberSelectionBar");
+const memberSelectionCount = document.getElementById("memberSelectionCount");
+const memberSelectionClearBtn = document.getElementById("memberSelectionClearBtn");
+const memberSelectionNameCardBtn = document.getElementById("memberSelectionNameCardBtn");
+
+/* 학년/반 단위 선택은 검색창에 학년반을 입력해 필터링한 뒤 "검색결과 전체 선택"을
+ * 누르는 것으로 처리한다 — 별도 학년/반 선택 UI 없이 기존 검색을 그대로 재사용. */
+const selectedMemberIds = new Set();
 
 const memberModal = document.getElementById("memberModal");
 const memberModalTitle = document.getElementById("memberModalTitle");
@@ -201,6 +212,28 @@ async function initMemberTab() {
     currentPage++;
     renderMemberPage();
   });
+
+  memberSelectAllBtn.addEventListener("click", () => {
+    for (const m of currentFiltered) selectedMemberIds.add(m.회원ID);
+    renderMemberPage();
+    updateMemberSelectionBar();
+  });
+  memberSelectionClearBtn.addEventListener("click", () => {
+    selectedMemberIds.clear();
+    renderMemberPage();
+    updateMemberSelectionBar();
+  });
+  memberSelectionNameCardBtn.addEventListener("click", () => {
+    const selected = allMembers
+      .filter((m) => selectedMemberIds.has(m.회원ID))
+      .sort((a, b) => (a.학년반 || "").localeCompare(b.학년반 || "", "ko", { numeric: true }) || a.이름.localeCompare(b.이름, "ko"));
+    if (!selected.length) return;
+    selectedMemberIds.clear();
+    renderMemberPage();
+    updateMemberSelectionBar();
+    document.querySelector('.admin-tab[data-tab="namecard"]').click();
+    loadNameCardMembers(selected);
+  });
 }
 
 /** 실제 명단에 있는 학년반 값들로 드롭다운을 채운다 — 오타/자유입력을 막는다. */
@@ -216,11 +249,31 @@ memberPhoneInput.addEventListener("input", () => {
   memberPhoneInput.value = memberPhoneInput.value.replace(/\D/g, "").slice(0, 11);
 });
 
+function updateMemberSelectionBar() {
+  const n = selectedMemberIds.size;
+  memberSelectionBar.style.display = n ? "flex" : "none";
+  memberSelectionCount.textContent = `${n}명 선택됨`;
+}
+
 function renderMemberTable(members) {
   memberTableBody.innerHTML = "";
   memberEmptyEl.style.display = members.length ? "none" : "block";
   for (const m of members) {
     const tr = document.createElement("tr");
+
+    const checkTd = document.createElement("td");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "member-table__checkbox";
+    checkbox.checked = selectedMemberIds.has(m.회원ID);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) selectedMemberIds.add(m.회원ID);
+      else selectedMemberIds.delete(m.회원ID);
+      updateMemberSelectionBar();
+    });
+    checkTd.appendChild(checkbox);
+    tr.appendChild(checkTd);
+
     const cells = [m.회원ID, m.이름, m.학년반 || "", m.전화 || ""];
     for (const c of cells) {
       const td = document.createElement("td");
@@ -321,19 +374,69 @@ memberModalSaveBtn.addEventListener("click", async () => {
 /* ===================== NameCard 탭 =====================
  * 성회 명찰 메일머지 Template.hwp(A4, 2x4=8칸)를 그대로 웹에서 재현한다. 슬롯을 누르면
  * 검색창이 뜨고, 학생을 고르면 그 자리에 실제 명찰(제목/이름/학년반)이 채워진다.
- * "인쇄" 버튼은 브라우저 인쇄 대화상자를 열어 @media print 레이아웃(A4, 2x4)으로 출력한다. */
+ * "인쇄" 버튼은 브라우저 인쇄 대화상자를 열어 @media print 레이아웃(A4, 2x4)으로 출력한다.
+ *
+ * 8명이 넘는 명단(Member 탭에서 여러 명 선택해 생성하거나, 8명 넘게 저장된 출력을 불러올
+ * 때)은 8칸씩 여러 장으로 나눠 인쇄한다 — namecardSlots 길이가 항상 8의 배수가 되도록
+ * 유지하고, 그 길이에 맞춰 .namecard-sheet(한 장)를 필요한 만큼 만든다.
+ *
+ * "저장"은 지금 채워진 슬롯들을 NameCardBatch 테이블에 그 시점의 이름/학년반 그대로
+ * 스냅샷으로 남긴다 — "NNN 명찰출력"으로 번호가 매겨지고, 나중에 회원 정보가 바뀌어도
+ * 그 버전 그대로 다시 불러와 인쇄할 수 있다. */
 const NAMECARD_TITLE_LINE1 = "2026 중고등부 하계성회 [중등부]";
 const NAMECARD_TITLE_LINE2 = "오직 성령 안에서 무너지지 않는 믿음을 세워가라";
 const NAMECARD_SLOT_COUNT = 8;
 
-const namecardSheetEl = document.getElementById("namecardSheet");
+const namecardPagesEl = document.getElementById("namecardPages");
 const namecardPrintBtn = document.getElementById("namecardPrintBtn");
+const namecardSaveBtn = document.getElementById("namecardSaveBtn");
+const namecardBatchSelect = document.getElementById("namecardBatchSelect");
 
-let namecardSlots = new Array(NAMECARD_SLOT_COUNT).fill(null); // index -> 회원 객체 | null
+let namecardSlots = new Array(NAMECARD_SLOT_COUNT).fill(null); // index -> 회원 객체 | null, 항상 8의 배수 길이
 let namecardSearchingIndex = null; // 검색창이 열려 있는 슬롯 — 한 번에 하나만 연다
+let namecardBatches = []; // getNameCardBatches()로 불러온 저장된 출력 목록
+
+/** 명단 길이에 맞춰 페이지(.namecard-sheet, 8칸씩) DOM을 다시 만들고 각 슬롯을 그린다. */
+function renderNamecardPages() {
+  const pageCount = Math.max(1, Math.ceil(namecardSlots.length / NAMECARD_SLOT_COUNT));
+  while (namecardSlots.length < pageCount * NAMECARD_SLOT_COUNT) namecardSlots.push(null);
+
+  namecardPagesEl.innerHTML = "";
+  for (let p = 0; p < pageCount; p++) {
+    const sheet = document.createElement("div");
+    sheet.className = "namecard-sheet";
+    sheet.dataset.page = String(p);
+    for (let i = 0; i < NAMECARD_SLOT_COUNT; i++) {
+      const slot = document.createElement("div");
+      slot.className = "namecard-slot";
+      slot.dataset.index = String(p * NAMECARD_SLOT_COUNT + i);
+      sheet.appendChild(slot);
+    }
+    namecardPagesEl.appendChild(sheet);
+  }
+  for (let i = 0; i < namecardSlots.length; i++) renderNamecardSlot(i);
+}
+
+/** Member 탭에서 선택한 학생들, 또는 저장된 출력을 불러와 슬롯에 채운다. */
+function loadNameCardMembers(members) {
+  namecardSlots = members.slice();
+  namecardSearchingIndex = null;
+  renderNamecardPages();
+}
+
+async function refreshNamecardBatchList() {
+  const { batches } = await getNameCardBatches();
+  namecardBatches = batches;
+  namecardBatchSelect.innerHTML =
+    `<option value="">저장된 출력 불러오기</option>` +
+    batches
+      .map((b) => `<option value="${b.id}">${String(b.id).padStart(3, "0")} 명찰출력 (${b.members.length}명)</option>`)
+      .join("");
+}
 
 function renderNamecardSlot(index) {
-  const slotEl = namecardSheetEl.querySelector(`.namecard-slot[data-index="${index}"]`);
+  const slotEl = namecardPagesEl.querySelector(`.namecard-slot[data-index="${index}"]`);
+  if (!slotEl) return;
   const member = namecardSlots[index];
 
   if (namecardSearchingIndex === index) {
@@ -431,8 +534,38 @@ function renderNamecardSlot(index) {
 }
 
 function initNameCardTab() {
-  for (let i = 0; i < NAMECARD_SLOT_COUNT; i++) renderNamecardSlot(i);
+  renderNamecardPages();
+  refreshNamecardBatchList();
+
   namecardPrintBtn.addEventListener("click", () => window.print());
+
+  namecardSaveBtn.addEventListener("click", async () => {
+    const filled = namecardSlots.filter(Boolean).map((m) => ({ 회원ID: m.회원ID, 이름: m.이름, 학년반: m.학년반 || "" }));
+    if (!filled.length) {
+      showToast("저장 중입니다...").fail("채워진 명찰이 없습니다.");
+      return;
+    }
+    const toast = showToast("저장 중입니다...");
+    const res = await saveNameCardBatch(filled);
+    if (res.success) {
+      const nnn = String(res.batch.id).padStart(3, "0");
+      toast.complete(`${nnn} 명찰출력 저장했습니다`);
+      await refreshNamecardBatchList();
+      namecardBatchSelect.value = String(res.batch.id);
+    } else {
+      toast.fail(res.error || "저장에 실패했습니다.");
+    }
+  });
+
+  namecardBatchSelect.addEventListener("change", () => {
+    const id = namecardBatchSelect.value;
+    if (!id) return;
+    const batch = namecardBatches.find((b) => String(b.id) === id);
+    if (!batch) return;
+    namecardSlots = batch.members.map((m) => ({ 회원ID: String(m.회원ID), 이름: m.이름, 학년반: m.학년반 || "" }));
+    namecardSearchingIndex = null;
+    renderNamecardPages();
+  });
 }
 
 /* ===================== Control Panel 탭 ===================== */

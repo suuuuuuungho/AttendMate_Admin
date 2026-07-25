@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>관리자 — AttendMate_Admin</title>
 <meta name="description" content="AttendMate 회원/네임카드/타임 제어 관리자 페이지">
-<link rel="stylesheet" href="assets/css/tokens.css?v=16">
-<link rel="stylesheet" href="assets/css/base.css?v=16">
-<link rel="stylesheet" href="assets/css/components.css?v=16">
-<link rel="stylesheet" href="assets/css/admin.css?v=16">
+<link rel="stylesheet" href="assets/css/tokens.css?v=17">
+<link rel="stylesheet" href="assets/css/base.css?v=17">
+<link rel="stylesheet" href="assets/css/components.css?v=17">
+<link rel="stylesheet" href="assets/css/admin.css?v=17">
 </head>
 <body>
 
@@ -62,6 +62,7 @@
       </div>
       <div class="admin-toolbar__meta">
         <span id="memberCount" class="text-caption" style="color: var(--color-ink-muted-48);"></span>
+        <button id="memberSelectAllBtn" type="button" class="btn-secondary-pill">검색결과 전체 선택</button>
         <select id="memberPageSizeSelect" class="search-input admin-toolbar__page-size">
           <option value="25">25명씩</option>
           <option value="50" selected>50명씩</option>
@@ -69,10 +70,16 @@
           <option value="all">전체 보기</option>
         </select>
       </div>
+      <div id="memberSelectionBar" class="member-selection-bar" style="display:none;">
+        <span id="memberSelectionCount" class="text-caption-strong"></span>
+        <button id="memberSelectionClearBtn" type="button" class="btn-secondary-pill">선택 해제</button>
+        <button id="memberSelectionNameCardBtn" type="button" class="btn-primary">선택 학생 명찰 생성</button>
+      </div>
       <div class="member-table-wrap">
         <table class="member-table">
           <thead>
             <tr>
+              <th></th>
               <th>회원ID</th>
               <th>이름</th>
               <th>학년반</th>
@@ -93,19 +100,25 @@
 
     <!-- ===== NameCard 탭 ===== -->
     <section id="tab-namecard" class="admin-panel" style="display:none;">
-      <div class="admin-toolbar" style="top: 96px;">
+      <div class="admin-toolbar" style="top: 96px; flex-wrap: wrap;">
         <span class="text-caption" style="color: var(--color-ink-muted-48);">칸을 눌러 학생을 검색하고 선택하면 명찰이 채워집니다.</span>
-        <button id="namecardPrintBtn" type="button" class="btn-primary" style="margin-left:auto;">인쇄</button>
+        <select id="namecardBatchSelect" class="search-input" style="width:auto; margin-left:auto;">
+          <option value="">저장된 출력 불러오기</option>
+        </select>
+        <button id="namecardSaveBtn" type="button" class="btn-secondary-pill">저장</button>
+        <button id="namecardPrintBtn" type="button" class="btn-primary">인쇄</button>
       </div>
-      <div id="namecardSheet" class="namecard-sheet">
-        <div class="namecard-slot" data-index="0"></div>
-        <div class="namecard-slot" data-index="1"></div>
-        <div class="namecard-slot" data-index="2"></div>
-        <div class="namecard-slot" data-index="3"></div>
-        <div class="namecard-slot" data-index="4"></div>
-        <div class="namecard-slot" data-index="5"></div>
-        <div class="namecard-slot" data-index="6"></div>
-        <div class="namecard-slot" data-index="7"></div>
+      <div id="namecardPages" class="namecard-pages">
+        <div class="namecard-sheet" data-page="0">
+          <div class="namecard-slot" data-index="0"></div>
+          <div class="namecard-slot" data-index="1"></div>
+          <div class="namecard-slot" data-index="2"></div>
+          <div class="namecard-slot" data-index="3"></div>
+          <div class="namecard-slot" data-index="4"></div>
+          <div class="namecard-slot" data-index="5"></div>
+          <div class="namecard-slot" data-index="6"></div>
+          <div class="namecard-slot" data-index="7"></div>
+        </div>
       </div>
     </section>
 
@@ -154,6 +167,6 @@
   </div>
 </div>
 
-<script type="module" src="assets/js/admin.js?v=16"></script>
+<script type="module" src="assets/js/admin.js?v=17"></script>
 </body>
 </html>

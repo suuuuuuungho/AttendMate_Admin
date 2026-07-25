@@ -127,11 +127,32 @@
   color: var(--color-primary);
   font-weight: 600;
 }
+.member-table__checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+/* 체크박스로 선택한 학생 수 + 명찰 생성 진입점 — 하나라도 선택되면 나타난다. */
+.member-selection-bar {
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-divider-soft);
+  margin-bottom: var(--space-sm);
+}
+.member-selection-bar > :last-child { margin-left: auto; }
 
 /* ===================== NameCard 탭 =====================
    성회 명찰 메일머지 Template.hwp를 그대로 재현 — A4 세로, 2열x4행=8칸.
    화면에서는 A4 비율(210:297)을 유지한 채 축소해서 보여주고, 인쇄 시에는
-   실제 A4 크기(mm)로 고정한다. */
+   실제 A4 크기(mm)로 고정한다. 8명이 넘으면 .namecard-sheet(한 장)가 여러 개
+   생기고, 인쇄 시 장마다 페이지를 나눈다. */
+.namecard-pages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
 .namecard-sheet {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -328,6 +349,7 @@
     display: none !important;
   }
   @page { size: A4; margin: 0; }
+  .namecard-pages { gap: 0; }
   .namecard-sheet {
     aspect-ratio: unset;
     width: 210mm;
@@ -337,7 +359,9 @@
     box-shadow: none;
     border-radius: 0;
     gap: 0;
+    break-after: page;
   }
+  .namecard-sheet:last-child { break-after: auto; }
   .namecard-slot { border: 1px dashed #ccc; }
   /* hwp 원본 DocInfo/BodyText에서 뽑은 값 — title-line2는 실제 인쇄물과 대조해서 13pt로 보정. */
   .namecard-card__title-line1 { font-size: 14pt; }

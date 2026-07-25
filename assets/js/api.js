@@ -121,6 +121,43 @@ export async function getAttendanceLog() {
   }
 }
 
+/* ===================== 명찰 출력 로그 (NameCard) =====================
+ * 저장 시점의 이름/학년반을 그대로 얼려서(snapshot) 담아두므로, 나중에 회원 정보가
+ * 바뀌어도 저장된 출력물은 항상 그때 그 내용으로 재현된다. */
+
+/** members: [{ 회원ID, 이름, 학년반 }, ...] — 채워진 슬롯 순서 그대로. */
+export async function saveNameCardBatch(members) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/NameCardBatch`, {
+      method: "POST",
+      headers: returnRepresentation(),
+      body: JSON.stringify({ members }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { success: false, error: data.message || "저장에 실패했습니다" };
+    }
+    const data = await res.json();
+    if (!data || !data.length) return { success: false, error: "저장 결과를 확인할 수 없습니다" };
+    return { success: true, batch: data[0] };
+  } catch (e) {
+    return { success: false, error: "네트워크 오류: " + e.message };
+  }
+}
+
+export async function getNameCardBatches() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/NameCardBatch?select=id,created_at,members&order=id.desc`, {
+      headers: headers(),
+    });
+    if (!res.ok) return { batches: [], available: false };
+    const data = await res.json();
+    return { batches: data, available: true };
+  } catch (e) {
+    return { batches: [], available: false };
+  }
+}
+
 /* ===================== 타임 제어 (Control Panel) ===================== */
 
 /**
