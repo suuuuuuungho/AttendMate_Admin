@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=26";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=27";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -6,6 +6,8 @@ import {
   updateMember,
   getTimeControls,
   setTimeControl,
+  getSmsControl,
+  setSmsControl,
   getAttendanceLog,
   saveNameCardBatch,
   getNameCardBatches,
@@ -14,9 +16,9 @@ import {
   createNameCardTemplate,
   updateNameCardTemplate,
   deleteNameCardTemplate,
-} from "./api.js?v=26";
-import { initAppSwitcher } from "./app-switcher.js?v=26";
-import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=26";
+} from "./api.js?v=27";
+import { initAppSwitcher } from "./app-switcher.js?v=27";
+import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=27";
 
 initAppSwitcher();
 
@@ -1057,8 +1059,33 @@ function renderTemplatePreview() {
 /* ===================== Control Panel 탭 ===================== */
 const timeControlListEl = document.getElementById("timeControlList");
 const timeControlUnavailableEl = document.getElementById("timeControlUnavailable");
+const smsControlToggle = document.getElementById("smsControlToggle");
+const smsControlUnavailableEl = document.getElementById("smsControlUnavailable");
+
+async function initSmsControl() {
+  const { enabled, available } = await getSmsControl();
+  smsControlUnavailableEl.style.display = available ? "none" : "block";
+  smsControlToggle.setAttribute("aria-checked", String(enabled));
+  smsControlToggle.disabled = !available;
+  if (smsControlToggle.dataset.bound) return;
+  smsControlToggle.dataset.bound = "1";
+  smsControlToggle.addEventListener("click", async () => {
+    const next = smsControlToggle.getAttribute("aria-checked") !== "true";
+    smsControlToggle.setAttribute("aria-checked", String(next));
+    const toast = showToast(next ? "문자 발송을 켜는 중입니다..." : "문자 발송을 끄는 중입니다...");
+    const res = await setSmsControl(next);
+    if (res.success) {
+      toast.complete(next ? "문자 발송이 켜졌습니다" : "문자 발송이 꺼졌습니다");
+    } else {
+      smsControlToggle.setAttribute("aria-checked", String(!next));
+      toast.fail(res.error || "변경에 실패했습니다.");
+    }
+  });
+}
 
 async function initControlTab() {
+  await initSmsControl();
+
   const { controls, available } = await getTimeControls();
   timeControlUnavailableEl.style.display = available ? "none" : "block";
   timeControlListEl.innerHTML = "";

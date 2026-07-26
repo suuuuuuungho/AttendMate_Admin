@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>관리자 — AttendMate_Admin</title>
 <meta name="description" content="AttendMate 회원/네임카드/타임 제어 관리자 페이지">
-<link rel="stylesheet" href="assets/css/tokens.css?v=26">
-<link rel="stylesheet" href="assets/css/base.css?v=26">
-<link rel="stylesheet" href="assets/css/components.css?v=26">
-<link rel="stylesheet" href="assets/css/admin.css?v=26">
+<link rel="stylesheet" href="assets/css/tokens.css?v=27">
+<link rel="stylesheet" href="assets/css/base.css?v=27">
+<link rel="stylesheet" href="assets/css/components.css?v=27">
+<link rel="stylesheet" href="assets/css/admin.css?v=27">
 </head>
 <body>
 
@@ -168,6 +168,21 @@
 
     <!-- ===== Control Panel 탭 ===== -->
     <section id="tab-control" class="admin-panel" style="display:none;">
+      <div class="text-caption-strong" style="color: var(--color-primary); margin-bottom: var(--space-xs);">문자 발송</div>
+      <p class="text-caption" style="color: var(--color-ink-muted-48); margin-bottom: var(--space-md);">
+        꺼두면 출석 처리/취소 시 학부모에게 알림 문자가 발송되지 않습니다.
+      </p>
+      <div class="time-control-list" style="margin-bottom: var(--space-xl);">
+        <div class="time-control-row">
+          <span class="time-control-row__label text-body on-light">출석 알림 문자</span>
+          <button id="smsControlToggle" type="button" class="time-control-toggle" role="switch" aria-checked="true" disabled></button>
+        </div>
+      </div>
+      <div id="smsControlUnavailable" class="stats-empty text-caption" style="display:none; margin-bottom: var(--space-xl);">
+        SmsControl 테이블이 아직 없습니다. supabase-sms-control.sql을 실행해주세요.
+      </div>
+
+      <div class="text-caption-strong" style="color: var(--color-primary); margin-bottom: var(--space-xs);">타임별 노출</div>
       <p class="text-caption" style="color: var(--color-ink-muted-48); margin-bottom: var(--space-md);">
         비활성화한 타임은 좌석 배치 현황/출석 통계 페이지의 드롭다운에서 사라지고 열람·편집할 수 없습니다.
       </p>
@@ -266,6 +281,6 @@
   </div>
 </div>
 
-<script type="module" src="assets/js/admin.js?v=26"></script>
+<script type="module" src="assets/js/admin.js?v=27"></script>
 </body>
 </html>

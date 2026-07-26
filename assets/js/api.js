@@ -287,3 +287,38 @@ export async function setTimeControl(time, active) {
     return { success: false, error: "네트워크 오류: " + e.message };
   }
 }
+
+/* ===================== 문자 발송 제어 (Control Panel) =====================
+ * SmsControl은 id=1 단일 행만 쓰는 전역 스위치 — 꺼두면 출석/출석취소 트리거가
+ * 학부모 문자 발송(notify_attendance_sms)을 건너뛴다. */
+
+export async function getSmsControl() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/SmsControl?id=eq.1&select=Enabled`, { headers: headers() });
+    if (!res.ok) return { enabled: true, available: false };
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) return { enabled: true, available: false };
+    return { enabled: data[0].Enabled, available: true };
+  } catch (e) {
+    return { enabled: true, available: false };
+  }
+}
+
+export async function setSmsControl(enabled) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/SmsControl?on_conflict=id`, {
+      method: "POST",
+      headers: { ...returnRepresentation(), Prefer: "resolution=merge-duplicates,return=representation" },
+      body: JSON.stringify({ id: 1, Enabled: enabled }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { success: false, error: data.message || "변경에 실패했습니다" };
+    }
+    const data = await res.json();
+    if (!data || !data.length) return { success: false, error: "설정을 찾을 수 없습니다" };
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: "네트워크 오류: " + e.message };
+  }
+}
