@@ -386,9 +386,22 @@ const namecardGenerateConfirmBtn = document.getElementById("namecardGenerateConf
 const namecardEditToolbar = document.getElementById("namecardEditToolbar");
 const namecardColorInput = document.getElementById("namecardColorInput");
 
+/** "+ 빈 템플릿 추가" — 선택된 템플릿의 배경/색상/정렬은 그대로 두고 텍스트만 비워서 새 템플릿으로 만든다. */
+function blankFromTemplateFields(source, name) {
+  return {
+    name,
+    title1: "",
+    title2: "",
+    division_suffix: "",
+    background: source.background || "#ffffff",
+    style: JSON.parse(JSON.stringify(source.style || {})),
+  };
+}
+
 const namecardTemplateSelect = document.getElementById("namecardTemplateSelect");
 const namecardTemplateThumb = document.getElementById("namecardTemplateThumb");
 const namecardTemplateNewBtn = document.getElementById("namecardTemplateNewBtn");
+const namecardTemplateBlankFromBtn = document.getElementById("namecardTemplateBlankFromBtn");
 const namecardTemplateEditBtn = document.getElementById("namecardTemplateEditBtn");
 const namecardTemplateDuplicateBtn = document.getElementById("namecardTemplateDuplicateBtn");
 const namecardTemplateDeleteBtn = document.getElementById("namecardTemplateDeleteBtn");
@@ -867,6 +880,21 @@ function initNameCardTab() {
       toast.complete("빈 템플릿을 만들었습니다");
       await refreshNamecardTemplateList(res.template.id);
       openTemplateEditor(activeTemplate); // 바로 내용을 채울 수 있게 편집 화면으로 이어준다
+    } else {
+      toast.fail(res.error || "생성에 실패했습니다.");
+    }
+  });
+
+  namecardTemplateBlankFromBtn.addEventListener("click", async () => {
+    if (!activeTemplate) return;
+    const name = prompt("새 템플릿 이름을 입력하세요.", `${activeTemplate.name} (빈 템플릿)`);
+    if (!name || !name.trim()) return;
+    const toast = showToast("템플릿을 만드는 중입니다...");
+    const res = await createNameCardTemplate(blankFromTemplateFields(activeTemplate, name.trim()));
+    if (res.success) {
+      toast.complete("빈 템플릿을 추가했습니다");
+      await refreshNamecardTemplateList(res.template.id);
+      openTemplateEditor(activeTemplate);
     } else {
       toast.fail(res.error || "생성에 실패했습니다.");
     }

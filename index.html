@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>관리자 — AttendMate_Admin</title>
 <meta name="description" content="AttendMate 회원/네임카드/타임 제어 관리자 페이지">
-<link rel="stylesheet" href="assets/css/tokens.css?v=24">
-<link rel="stylesheet" href="assets/css/base.css?v=24">
-<link rel="stylesheet" href="assets/css/components.css?v=24">
-<link rel="stylesheet" href="assets/css/admin.css?v=24">
+<link rel="stylesheet" href="assets/css/tokens.css?v=25">
+<link rel="stylesheet" href="assets/css/base.css?v=25">
+<link rel="stylesheet" href="assets/css/components.css?v=25">
+<link rel="stylesheet" href="assets/css/admin.css?v=25">
 </head>
 <body>
 
@@ -95,7 +95,7 @@
     <section id="tab-namecard" class="admin-panel" style="display:none;">
       <!-- 1. 템플릿 — 고르면 미리보기가 바로 바뀐다. 미리보기가 위, 조작(선택/새로만들기/복제/편집/삭제)은 아래. -->
       <div class="namecard-panel">
-        <div class="namecard-panel__title">1. 명찰 디자인</div>
+        <div class="namecard-panel__title">1. 템플릿 선택하기</div>
         <div class="namecard-panel__body namecard-template-panel">
           <div id="namecardTemplateThumb" class="namecard-slot namecard-template-preview"></div>
           <div class="namecard-template-panel__controls">
@@ -110,12 +110,13 @@
         </div>
       </div>
 
-      <!-- 2. 학생 채우기 · 출력 -->
+      <!-- 2. 명찰 파일 생성하기 -->
       <div class="namecard-panel">
-        <div class="namecard-panel__title">2. 학생 채우기 · 출력</div>
+        <div class="namecard-panel__title">2. 명찰 파일 생성하기</div>
         <div class="namecard-panel__body">
           <div class="namecard-toolbar-group__row">
-            <button id="namecardGenerateBtn" type="button" class="namecard-btn namecard-btn--accent">+ 파일 생성 (반/학년 전체)</button>
+            <button id="namecardGenerateBtn" type="button" class="namecard-btn namecard-btn--accent">+ 파일 생성</button>
+            <button id="namecardTemplateBlankFromBtn" type="button" class="namecard-btn">+ 빈 템플릿 추가</button>
             <button id="namecardSaveBtn" type="button" class="namecard-btn">저장</button>
           </div>
           <p class="text-caption namecard-panel__hint">아래 칸을 눌러 학생 한 명씩 검색해서 채울 수도 있어요.</p>
@@ -265,6 +266,6 @@
   </div>
 </div>
 
-<script type="module" src="assets/js/admin.js?v=24"></script>
+<script type="module" src="assets/js/admin.js?v=25"></script>
 </body>
 </html>
