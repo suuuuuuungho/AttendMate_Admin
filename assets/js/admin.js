@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=27";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=29";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -16,9 +16,9 @@ import {
   createNameCardTemplate,
   updateNameCardTemplate,
   deleteNameCardTemplate,
-} from "./api.js?v=27";
-import { initAppSwitcher } from "./app-switcher.js?v=27";
-import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=27";
+} from "./api.js?v=29";
+import { initAppSwitcher } from "./app-switcher.js?v=29";
+import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=29";
 
 initAppSwitcher();
 
@@ -138,6 +138,7 @@ const memberIdInput = document.getElementById("memberIdInput");
 const memberNameInput = document.getElementById("memberNameInput");
 const memberDivisionInput = document.getElementById("memberDivisionInput");
 const memberPhoneInput = document.getElementById("memberPhoneInput");
+const memberParentPhoneInput = document.getElementById("memberParentPhoneInput");
 const memberModalError = document.getElementById("memberModalError");
 const memberModalCancelBtn = document.getElementById("memberModalCancelBtn");
 const memberModalSaveBtn = document.getElementById("memberModalSaveBtn");
@@ -224,6 +225,9 @@ function populateDivisionOptions() {
 memberPhoneInput.addEventListener("input", () => {
   memberPhoneInput.value = memberPhoneInput.value.replace(/\D/g, "").slice(0, 11);
 });
+memberParentPhoneInput.addEventListener("input", () => {
+  memberParentPhoneInput.value = memberParentPhoneInput.value.replace(/\D/g, "").slice(0, 11);
+});
 
 function renderMemberTable(members) {
   memberTableBody.innerHTML = "";
@@ -231,7 +235,7 @@ function renderMemberTable(members) {
   for (const m of members) {
     const tr = document.createElement("tr");
 
-    const cells = [m.회원ID, m.이름, m.학년반 || "", m.전화 || ""];
+    const cells = [m.회원ID, m.이름, m.학년반 || "", m.전화 || "", m.학부모전화 || ""];
     for (const c of cells) {
       const td = document.createElement("td");
       td.textContent = c;
@@ -258,7 +262,10 @@ async function openMemberModal(member) {
     memberIdInput.value = member.회원ID;
     memberNameInput.value = member.이름;
     memberDivisionInput.value = member.학년반 || "";
-    memberPhoneInput.value = member.전화 || "";
+    // DB에 "010-1234-5678"처럼 하이픈 포함으로 저장된 기존 값도 있어 — 그대로 채우면
+    // 수정 없이 저장만 눌러도 숫자 11자리 검증에 걸린다. 표시 시점에 미리 숫자만 남긴다.
+    memberPhoneInput.value = (member.전화 || "").replace(/\D/g, "");
+    memberParentPhoneInput.value = (member.학부모전화 || "").replace(/\D/g, "");
     memberModal.style.display = "flex";
     memberNameInput.focus();
   } else {
@@ -268,6 +275,7 @@ async function openMemberModal(member) {
     memberNameInput.value = "";
     memberDivisionInput.value = "";
     memberPhoneInput.value = "";
+    memberParentPhoneInput.value = "";
     memberModal.style.display = "flex";
     memberIdInput.value = await getNextGeneratedId();
     memberNameInput.focus();
@@ -286,6 +294,7 @@ memberModalSaveBtn.addEventListener("click", async () => {
   const name = memberNameInput.value.trim();
   const division = memberDivisionInput.value.trim();
   const phone = memberPhoneInput.value.trim();
+  const parentPhone = memberParentPhoneInput.value.trim();
 
   if (!name) {
     memberModalError.textContent = "이름을 입력해주세요.";
@@ -302,20 +311,25 @@ memberModalSaveBtn.addEventListener("click", async () => {
     memberModalError.style.display = "block";
     return;
   }
+  if (parentPhone && !/^\d{11}$/.test(parentPhone)) {
+    memberModalError.textContent = "학부모 전화번호는 숫자 11자리로 입력해주세요.";
+    memberModalError.style.display = "block";
+    return;
+  }
   memberModalError.style.display = "none";
 
   const toast = showToast(editingMemberId ? "수정 처리 중입니다..." : "등록 처리 중입니다...");
   memberModalSaveBtn.disabled = true;
   try {
     const res = editingMemberId
-      ? await updateMember({ 회원ID: id, 이름: name, 학년반: division, 전화: phone })
-      : await createMember({ 회원ID: id, 이름: name, 학년반: division, 전화: phone });
+      ? await updateMember({ 회원ID: id, 이름: name, 학년반: division, 전화: phone, 학부모전화: parentPhone })
+      : await createMember({ 회원ID: id, 이름: name, 학년반: division, 전화: phone, 학부모전화: parentPhone });
 
     if (res.success) {
       toast.complete(editingMemberId ? "수정했습니다" : "등록했습니다");
       closeMemberModal();
       const idx = allMembers.findIndex((m) => m.회원ID === id);
-      const updated = { 회원ID: id, 이름: name, 학년반: division, 전화: phone };
+      const updated = { 회원ID: id, 이름: name, 학년반: division, 전화: phone, 학부모전화: parentPhone };
       if (idx >= 0) allMembers[idx] = updated;
       else allMembers.push(updated);
       populateDivisionOptions();

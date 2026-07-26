@@ -9,7 +9,13 @@ const headers = (extra = {}) => ({
 const returnRepresentation = () => headers({ Prefer: "return=representation" });
 
 function toMember(row) {
-  return { 회원ID: String(row.ID), 이름: row.Name, 학년반: row.Division, 전화: row.Phone || "" };
+  return {
+    회원ID: String(row.ID),
+    이름: row.Name,
+    학년반: row.Division,
+    전화: row.Phone || "",
+    학부모전화: row.ParentPhone || "",
+  };
 }
 
 // PostgREST 기본 1000행 제한을 넘는 전체 회원(1487명)을 한 번에 다 받아오기 위한 페이지네이션.
@@ -33,7 +39,7 @@ async function fetchAllRows(path) {
 
 export async function getAllMembers() {
   try {
-    const data = await fetchAllRows(`/rest/v1/Member?select=ID,Name,Division,Phone&order=Division.asc,Name.asc`);
+    const data = await fetchAllRows(`/rest/v1/Member?select=ID,Name,Division,Phone,ParentPhone&order=Division.asc,Name.asc`);
     return { members: data.map(toMember) };
   } catch (e) {
     return { members: [] };
@@ -74,12 +80,18 @@ export async function memberExists(id) {
   }
 }
 
-export async function createMember({ 회원ID, 이름, 학년반, 전화 }) {
+export async function createMember({ 회원ID, 이름, 학년반, 전화, 학부모전화 }) {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/Member`, {
       method: "POST",
       headers: headers(),
-      body: JSON.stringify({ ID: Number(회원ID), Name: 이름, Division: 학년반, Phone: 전화 || null }),
+      body: JSON.stringify({
+        ID: Number(회원ID),
+        Name: 이름,
+        Division: 학년반,
+        Phone: 전화 || null,
+        ParentPhone: 학부모전화 || null,
+      }),
     });
     if (res.status === 201) return { success: true };
     if (res.status === 409) return { success: false, error: "이미 존재하는 회원ID입니다: " + 회원ID };
@@ -90,12 +102,17 @@ export async function createMember({ 회원ID, 이름, 학년반, 전화 }) {
   }
 }
 
-export async function updateMember({ 회원ID, 이름, 학년반, 전화 }) {
+export async function updateMember({ 회원ID, 이름, 학년반, 전화, 학부모전화 }) {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/Member?ID=eq.${Number(회원ID)}`, {
       method: "PATCH",
       headers: returnRepresentation(),
-      body: JSON.stringify({ Name: 이름, Division: 학년반, Phone: 전화 || null }),
+      body: JSON.stringify({
+        Name: 이름,
+        Division: 학년반,
+        Phone: 전화 || null,
+        ParentPhone: 학부모전화 || null,
+      }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));

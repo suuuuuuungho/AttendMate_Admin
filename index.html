@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>관리자 — AttendMate_Admin</title>
 <meta name="description" content="AttendMate 회원/네임카드/타임 제어 관리자 페이지">
-<link rel="stylesheet" href="assets/css/tokens.css?v=27">
-<link rel="stylesheet" href="assets/css/base.css?v=27">
-<link rel="stylesheet" href="assets/css/components.css?v=27">
-<link rel="stylesheet" href="assets/css/admin.css?v=27">
+<link rel="stylesheet" href="assets/css/tokens.css?v=29">
+<link rel="stylesheet" href="assets/css/base.css?v=29">
+<link rel="stylesheet" href="assets/css/components.css?v=29">
+<link rel="stylesheet" href="assets/css/admin.css?v=29">
 </head>
 <body>
 
@@ -77,6 +77,7 @@
               <th>이름</th>
               <th>학년반</th>
               <th>전화</th>
+              <th>학부모 전화</th>
               <th></th>
             </tr>
           </thead>
@@ -219,6 +220,7 @@
     <input id="memberNameInput" class="search-input" style="width:100%;" type="text" placeholder="이름">
     <select id="memberDivisionInput" class="search-input" style="width:100%;"></select>
     <input id="memberPhoneInput" class="search-input" style="width:100%;" type="text" placeholder="전화번호 (11자리 숫자)" inputmode="numeric" maxlength="11">
+    <input id="memberParentPhoneInput" class="search-input" style="width:100%;" type="text" placeholder="학부모 전화번호 (11자리 숫자)" inputmode="numeric" maxlength="11">
     <div id="memberModalError" class="password-gate__error text-caption" style="display:none;"></div>
     <div style="display:flex; gap:8px; justify-content:flex-end;">
       <button id="memberModalCancelBtn" class="btn-secondary-pill">취소</button>
@@ -281,6 +283,6 @@
   </div>
 </div>
 
-<script type="module" src="assets/js/admin.js?v=27"></script>
+<script type="module" src="assets/js/admin.js?v=29"></script>
 </body>
 </html>
