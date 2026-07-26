@@ -134,28 +134,57 @@
    실제 A4 크기(mm)로 고정한다. 8명이 넘으면 .namecard-sheet(한 장)가 여러 개
    생기고, 인쇄 시 장마다 페이지를 나눈다.
 
-   툴바는 "1. 템플릿" / "2. 명찰 파일" 두 단계로 라벨을 붙여 순서를 알려주고, 되돌리기
-   힘든 동작(삭제/초기화)은 옅은 색으로 낮춰서 실수로 누르기 쉬운 위치에서 벗어나게 한다.
+   흐름을 "1. 명찰 디자인 → (저장된 파일 불러오기, 별도) → 2. 학생 채우기·출력" 세 개의
+   독립된 패널로 나눠서 "새로 만들기"와 "불러오기"가 헷갈리지 않게 하고, 되돌리기 힘든
+   동작(삭제/초기화)은 옅은 색으로 낮춰서 실수로 누르기 쉬운 위치에서 벗어나게 한다.
+   템플릿을 고르면 바로 옆 미리보기가 즉시 바뀌어서 클릭 결과가 바로 보인다.
    모든 버튼/셀렉트는 36px로 높이를 통일한다. */
-.namecard-toolbar {
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--space-sm);
+.namecard-panel {
+  border: 1px solid var(--color-divider-soft);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  background: var(--color-canvas);
 }
-.namecard-toolbar-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.namecard-toolbar-group__label {
-  font-size: var(--type-fine-print-size);
+.namecard-panel--muted { background: var(--color-canvas-parchment); border-style: dashed; }
+.namecard-panel__title {
+  font-size: var(--type-caption-strong-size);
   font-weight: 700;
   color: var(--color-ink);
+  margin-bottom: var(--space-sm);
 }
-.namecard-toolbar-group__hint {
-  font-weight: 400;
+.namecard-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.namecard-panel__hint {
   color: var(--color-ink-muted-48);
+  margin: 0;
 }
+
+.namecard-template-panel {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+.namecard-template-preview {
+  flex: 0 0 auto;
+  width: 220px;
+  aspect-ratio: 105 / 74.25;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 20px -14px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.namecard-template-panel__controls {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
 .namecard-toolbar-group__row {
   display: flex;
   align-items: center;

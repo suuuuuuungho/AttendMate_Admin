@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=22";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=23";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -14,9 +14,9 @@ import {
   createNameCardTemplate,
   updateNameCardTemplate,
   deleteNameCardTemplate,
-} from "./api.js?v=22";
-import { initAppSwitcher } from "./app-switcher.js?v=22";
-import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=22";
+} from "./api.js?v=23";
+import { initAppSwitcher } from "./app-switcher.js?v=23";
+import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=23";
 
 initAppSwitcher();
 
@@ -354,6 +354,23 @@ function defaultTemplateFields() {
   };
 }
 
+/** "+ 새 템플릿" — 아무 텍스트도 없는 빈 디자인에서 바로 시작할 수 있게 한다. */
+function blankTemplateFields(name) {
+  return {
+    name,
+    title1: "",
+    title2: "",
+    division_suffix: "",
+    background: "#ffffff",
+    style: {
+      title1: { justify: "center", color: "#1d1d1f" },
+      title2: { justify: "center", color: "#1d1d1f" },
+      name: { justify: "center", color: "#1d1d1f" },
+      division: { justify: "center", color: "#1d1d1f" },
+    },
+  };
+}
+
 const namecardPagesEl = document.getElementById("namecardPages");
 const namecardPrintBtn = document.getElementById("namecardPrintBtn");
 const namecardSaveBtn = document.getElementById("namecardSaveBtn");
@@ -370,6 +387,8 @@ const namecardEditToolbar = document.getElementById("namecardEditToolbar");
 const namecardColorInput = document.getElementById("namecardColorInput");
 
 const namecardTemplateSelect = document.getElementById("namecardTemplateSelect");
+const namecardTemplateThumb = document.getElementById("namecardTemplateThumb");
+const namecardTemplateNewBtn = document.getElementById("namecardTemplateNewBtn");
 const namecardTemplateEditBtn = document.getElementById("namecardTemplateEditBtn");
 const namecardTemplateDuplicateBtn = document.getElementById("namecardTemplateDuplicateBtn");
 const namecardTemplateDeleteBtn = document.getElementById("namecardTemplateDeleteBtn");
@@ -418,6 +437,41 @@ async function refreshNamecardTemplateList(selectId) {
   } else {
     activeTemplate = null;
   }
+  renderNamecardTemplateThumb();
+}
+
+/** 지금 선택된 템플릿을 실제 명찰과 같은 모양의 작은 미리보기로 그린다 — 읽기 전용,
+ * 템플릿을 고르거나 편집/복제/삭제/새로 만들 때마다 즉시 다시 그려서 바로 결과가 보이게 한다. */
+function renderNamecardTemplateThumb() {
+  const t = activeTemplate || defaultTemplateFields();
+  namecardTemplateThumb.innerHTML = "";
+  const card = document.createElement("div");
+  card.className = "namecard-card";
+  card.style.backgroundColor = t.background || "";
+  card.innerHTML = `
+    <div class="namecard-card__row namecard-card__row--spacer"></div>
+    <div class="namecard-card__contentblock">
+      <div class="namecard-card__title">
+        <div class="namecard-card__title-line1">${escapeHtml(t.title1)}</div>
+        <div class="namecard-card__title-line2">${escapeHtml(t.title2)}</div>
+      </div>
+      <div class="namecard-card__name">홍길동</div>
+      <div class="namecard-card__division">1-1반 ${escapeHtml(t.division_suffix || "")}</div>
+    </div>
+    <div class="namecard-card__row namecard-card__row--spacer"></div>
+  `;
+  const fieldMap = {
+    title1: card.querySelector(".namecard-card__title-line1"),
+    title2: card.querySelector(".namecard-card__title-line2"),
+    name: card.querySelector(".namecard-card__name"),
+    division: card.querySelector(".namecard-card__division"),
+  };
+  for (const [field, el] of Object.entries(fieldMap)) {
+    const st = (t.style && t.style[field]) || {};
+    if (st.justify) el.style.justifyContent = st.justify;
+    if (st.color) el.style.color = st.color;
+  }
+  namecardTemplateThumb.appendChild(card);
 }
 
 /** 검색/명단에서 고른 원본 회원(회원ID/이름/학년반)을 지금 선택된 템플릿 디자인으로 명찰
@@ -493,7 +547,7 @@ async function refreshNamecardBatchList() {
   const { batches } = await getNameCardBatches();
   namecardBatches = batches;
   namecardBatchSelect.innerHTML =
-    `<option value="">저장된 파일 불러오기</option>` +
+    `<option value="">불러올 파일을 선택하세요</option>` +
     batches.map((b) => `<option value="${b.id}">${escapeHtml(namecardBatchLabel(b))} (${b.members.length}명)</option>`).join("");
   namecardBatchDeleteBtn.disabled = !namecardBatchSelect.value;
 }
@@ -797,10 +851,25 @@ function initNameCardTab() {
     entry.style[field] = { ...entry.style[field], color };
   });
 
-  /* ===== 템플릿 선택/복제/삭제 ===== */
+  /* ===== 템플릿 선택/새로 만들기/복제/삭제 — 무엇을 하든 미리보기가 바로 갱신된다 ===== */
   namecardTemplateSelect.addEventListener("change", () => {
     const t = namecardTemplates.find((x) => String(x.id) === namecardTemplateSelect.value);
     if (t) activeTemplate = t;
+    renderNamecardTemplateThumb();
+  });
+
+  namecardTemplateNewBtn.addEventListener("click", async () => {
+    const name = prompt("새 템플릿 이름을 입력하세요.", "새 템플릿");
+    if (!name || !name.trim()) return;
+    const toast = showToast("템플릿을 만드는 중입니다...");
+    const res = await createNameCardTemplate(blankTemplateFields(name.trim()));
+    if (res.success) {
+      toast.complete("빈 템플릿을 만들었습니다");
+      await refreshNamecardTemplateList(res.template.id);
+      openTemplateEditor(activeTemplate); // 바로 내용을 채울 수 있게 편집 화면으로 이어준다
+    } else {
+      toast.fail(res.error || "생성에 실패했습니다.");
+    }
   });
 
   namecardTemplateEditBtn.addEventListener("click", async () => {
