@@ -576,7 +576,11 @@
     left: 0;
     width: 100%;
   }
+  /* 인쇄에는 실제 8칸 명찰 시트(#namecardPages)만 나가야 한다 — 템플릿 선택/생성/
+     저장된 파일 패널과 초기화·인쇄 버튼까지 같이 찍히던 걸 여기서 다 걷어낸다. */
   #tab-namecard .admin-toolbar,
+  .namecard-panel,
+  .namecard-sheet-actions,
   #namecardEditToolbar,
   .namecard-slot__add,
   .namecard-slot__clear,
@@ -587,6 +591,12 @@
   [contenteditable="true"] { outline: none !important; }
   @page { size: A4; margin: 0; }
   .namecard-pages { gap: 0; }
+  /* 템플릿 배경색은 JS가 인라인 style.backgroundColor로 넣는데, 브라우저가 기본적으로
+     인쇄 시 배경색을 생략해서 신입반처럼 배경색을 쓴 템플릿이 흰 배경으로 찍히던 문제. */
+  #namecardPages, #namecardPages * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   .namecard-sheet {
     aspect-ratio: unset;
     width: 210mm;
