@@ -163,15 +163,16 @@
   margin: 0;
 }
 
+/* 미리보기가 위, 선택/새로만들기/복제/편집/삭제 조작은 그 아래로 — 세로로 쌓는다. */
 .namecard-template-panel {
-  flex-direction: row;
+  flex-direction: column;
   align-items: flex-start;
   gap: var(--space-md);
-  flex-wrap: wrap;
 }
 .namecard-template-preview {
   flex: 0 0 auto;
-  width: 220px;
+  width: 100%;
+  max-width: 420px;
   aspect-ratio: 105 / 74.25;
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-md);
@@ -179,10 +180,21 @@
   overflow: hidden;
 }
 .namecard-template-panel__controls {
-  flex: 1 1 220px;
+  width: 100%;
+  max-width: 420px;
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+}
+
+/* 명찰 칸 바로 위 액션바 — 초기화(빈칸으로 되돌리기)는 결과물 근처에서 낮은 존재감으로,
+   인쇄는 마지막 단계라 오른쪽에 크게 분리해서 둔다. */
+.namecard-sheet-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 
 .namecard-toolbar-group__row {
