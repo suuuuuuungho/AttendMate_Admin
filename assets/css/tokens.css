@@ -173,6 +173,6 @@
   --color-grade-3: #ffe699;
   --color-grade-new: #a8cff0;
   --color-grade-longterm: #c7cbd1;
-  --color-grade-teacher: #9fe0d0;
+  --color-grade-teacher: #000000;
   --color-grade-text: var(--color-ink);
 }

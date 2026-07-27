@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, TIMES } from "./config.js?v=33";
+import { ADMIN_PASSWORD, TIMES } from "./config.js?v=34";
 import {
   getAllMembers,
   getNextGeneratedId,
@@ -16,9 +16,9 @@ import {
   createNameCardTemplate,
   updateNameCardTemplate,
   deleteNameCardTemplate,
-} from "./api.js?v=33";
-import { initAppSwitcher } from "./app-switcher.js?v=33";
-import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=33";
+} from "./api.js?v=34";
+import { initAppSwitcher } from "./app-switcher.js?v=34";
+import { GRADE_GROUPS, getGradeGroup, abbreviateClass } from "./grades.js?v=34";
 
 initAppSwitcher();
 
